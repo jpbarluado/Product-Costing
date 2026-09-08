@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Cost Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101826;
+    --paper:#F5F7F9;
+    --surface:#FFFFFF;
+    --accent:#0B6E75;
+    --accent-2:#14919B;
+    --profit:#157F5B;
+    --danger:#B4413C;
+    --rule:#DCE3E8;
+    --muted:#5B6B78;
+    --soft:#EEF2F5;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(16,24,38,.05), 0 8px 24px -18px rgba(16,24,38,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:76px;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px}
+  input,select,button{font-family:inherit;font-size:inherit;color:inherit}
+  .num{font-variant-numeric:tabular-nums;text-align:right}
+
+  /* ---- Masthead ---- */
+  .mast{
+    background:var(--surface);
+    border-bottom:1px solid var(--rule);
+  }
+  .mast-inner{
+    display:flex;gap:24px;align-items:flex-start;justify-content:space-between;
+    padding:22px 0 20px;flex-wrap:wrap;
+  }
+  .kicker{
+    font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);font-weight:600;margin-bottom:6px;
+  }
+  .title-input{
+    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:30px;
+    line-height:1.15;border:none;background:transparent;padding:2px 0;
+    width:100%;max-width:460px;color:var(--ink);
+    border-bottom:2px solid transparent;
+  }
+  .title-input:hover{border-bottom-color:var(--soft)}
+  .title-input:focus{outline:none;border-bottom-color:var(--accent)}
+  .meta-row{display:flex;gap:18px 26px;flex-wrap:wrap;margin-top:14px}
+  .field{display:flex;flex-direction:column;gap:3px}
+  .field label{font-size:11px;color:var(--muted);letter-spacing:.02em}
+  .field input,.field select{
+    border:1px solid var(--rule);background:var(--surface);
+    border-radius:7px;padding:6px 9px;min-width:120px;
+  }
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,110,117,.12)}
+  .field input[type=number]{width:120px}
+
+  .hero{
+    text-align:right;min-width:210px;flex:0 0 auto;
+    border-left:1px solid var(--rule);padding-left:24px;
+  }
+  .hero-label{font-size:12px;color:var(--muted);letter-spacing:.04em}
+  .hero-num{
+    font-family:"Space Grotesk",sans-serif;font-weight:700;
+    font-size:46px;line-height:1.05;letter-spacing:-.01em;
+    font-variant-numeric:tabular-nums;margin:2px 0;color:var(--ink);
+  }
+  .hero-sub{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  /* ---- Toolbar / tabs ---- */
+  .toolbar{
+    position:sticky;top:0;z-index:20;background:var(--paper);
+    border-bottom:1px solid var(--rule);
+  }
+  .toolbar-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:0}
+  .tabs{display:flex;gap:2px}
+  .tab{
+    border:none;background:transparent;cursor:pointer;
+    padding:14px 4px;margin-right:20px;color:var(--muted);
+    font-weight:500;font-size:14.5px;position:relative;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab[aria-selected="true"]{color:var(--ink);font-weight:600}
+  .tab[aria-selected="true"]::after{
+    content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent);
+  }
+  .actions{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0}
+  .btn{
+    border:1px solid var(--rule);background:var(--surface);cursor:pointer;
+    border-radius:7px;padding:7px 11px;font-size:13px;color:var(--ink);
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.primary:hover{background:#0a121f;color:#fff}
+
+  /* ---- Panels ---- */
+  main{padding:26px 0 40px}
+  .panel{display:none;animation:none}
+  .panel.active{display:block}
+  .panel-head h2{
+    font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:20px;margin:0 0 3px;
+  }
+  .panel-head p{margin:0 0 18px;color:var(--muted);font-size:13.5px;max-width:62ch}
+
+  /* ---- Ledger tables ---- */
+  .ledger{width:100%;border-collapse:collapse}
+  .ledger thead th{
+    text-align:left;font-size:11px;letter-spacing:.06em;color:var(--muted);
+    font-weight:600;text-transform:uppercase;padding:0 10px 8px;border-bottom:1px solid var(--rule);
+  }
+  .ledger thead th.num{text-align:right}
+  .ledger tbody td{padding:5px 10px;border-bottom:1px solid var(--soft);vertical-align:middle}
+  .ledger tbody tr:hover{background:#FAFCFD}
+  .cell-input{
+    width:100%;border:1px solid transparent;background:transparent;
+    border-radius:6px;padding:7px 8px;
+  }
+  .cell-input:hover{border-color:var(--rule)}
+  .cell-input:focus{outline:none;border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(11,110,117,.1)}
+  td.num .cell-input{text-align:right;font-variant-numeric:tabular-nums}
+  td.unit-cell{width:120px}
+  td.qty-cell,td.cost-cell{width:130px}
+  td.line{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:500;white-space:nowrap;padding-right:10px}
+  td.rm{width:38px;text-align:center}
+  .rm-btn{
+    border:none;background:transparent;color:var(--muted);cursor:pointer;
+    font-size:18px;line-height:1;border-radius:6px;width:28px;height:28px;
+  }
+  .rm-btn:hover{background:#FBECEB;color:var(--danger)}
+  .empty{padding:22px 10px;color:var(--muted);font-size:13.5px}
+
+  .add-row{margin-top:10px}
+  .add-btn{
+    border:1px dashed var(--rule);background:transparent;color:var(--accent);
+    cursor:pointer;border-radius:8px;padding:9px 14px;font-size:13.5px;font-weight:500;width:100%;
+  }
+  .add-btn:hover{border-color:var(--accent);background:rgba(11,110,117,.04)}
+
+  .panel-foot{
+    margin-top:16px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end;
+  }
+  .foot-note{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)}
+  .foot-note input{width:80px;border:1px solid var(--rule);border-radius:6px;padding:5px 8px;text-align:right}
+  .subtotals{min-width:260px;font-variant-numeric:tabular-nums;font-size:13.5px}
+  .subtotals .srow{display:flex;justify-content:space-between;padding:5px 0}
+  .subtotals .srow.total{border-top:1px solid var(--rule);margin-top:4px;padding-top:9px;font-weight:600;font-size:15px}
+  .subtotals .lab{color:var(--muted)}
+  .subtotals .val{font-weight:500}
+
+  /* ---- Overhead ---- */
+  .oh-method{display:flex;flex-direction:column;gap:6px;max-width:340px;margin-bottom:20px}
+  .oh-method label{font-size:12px;color:var(--muted)}
+  .oh-method select{border:1px solid var(--rule);border-radius:7px;padding:8px 10px;background:var(--surface)}
+  .oh-method select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,110,117,.12)}
+  .rate-box{display:flex;align-items:flex-end;gap:10px;max-width:340px}
+  .rate-box .field{flex:1}
+  .rate-box .rate-input{position:relative;display:flex;align-items:center}
+  .rate-box .rate-input input{width:100%;border:1px solid var(--rule);border-radius:7px;padding:8px 40px 8px 10px;text-align:right;font-variant-numeric:tabular-nums}
+  .rate-box .rate-input input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,110,117,.12)}
+  .rate-box .suffix{position:absolute;right:11px;color:var(--muted);font-size:13px;pointer-events:none}
+  .oh-result{margin-top:20px;font-variant-numeric:tabular-nums}
+
+  /* ---- Summary ---- */
+  .summary-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:34px;align-items:start}
+  .sheet .srow{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--soft);font-variant-numeric:tabular-nums}
+  .sheet .srow .lab{color:var(--muted)}
+  .sheet .srow.sub .lab{color:var(--ink)}
+  .sheet .srow.sub{font-weight:500}
+  .sheet .srow.grand{border-bottom:none;border-top:2px solid var(--ink);margin-top:6px;padding-top:12px}
+  .sheet .srow.grand .lab{font-weight:600;color:var(--ink)}
+  .sheet .srow.grand .val{font-weight:700;font-size:17px;font-family:"Space Grotesk",sans-serif}
+  .sheet .hint{font-size:11.5px;color:var(--muted);margin-left:8px;font-variant-numeric:normal}
+
+  .perunit-card{
+    background:var(--ink);color:#fff;border-radius:var(--radius);padding:20px 22px;margin-top:22px;
+  }
+  .perunit-card .pu-label{font-size:12px;color:#9fb0bd;letter-spacing:.04em}
+  .perunit-card .pu-num{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:38px;font-variant-numeric:tabular-nums;line-height:1.05;margin-top:4px}
+  .perunit-card .pu-sub{font-size:12.5px;color:#9fb0bd;margin-top:4px;font-variant-numeric:tabular-nums}
+
+  .comp{margin-top:4px}
+  .comp h3{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:14px;margin:0 0 12px}
+  .comp-bar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--soft)}
+  .comp-bar span{display:block;height:100%}
+  .seg-mat{background:var(--accent)}
+  .seg-lab{background:var(--accent-2)}
+  .seg-oh{background:#9BC7CB}
+  .comp-legend{margin-top:14px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+  .comp-legend .lrow{display:flex;align-items:center;gap:9px;font-variant-numeric:tabular-nums}
+  .dot{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+  .comp-legend .lrow .lname{flex:1;color:var(--muted)}
+  .comp-legend .lrow .lpct{font-weight:600;width:48px;text-align:right}
+  .comp-legend .lrow .lval{width:110px;text-align:right;color:var(--muted)}
+
+  .pricing{margin-top:30px;border-top:1px solid var(--rule);padding-top:22px}
+  .pricing h3{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;margin:0 0 14px}
+  .price-controls{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px}
+  .price-controls select,.price-controls input{border:1px solid var(--rule);border-radius:7px;padding:8px 10px;background:var(--surface)}
+  .price-controls input{width:110px;text-align:right;font-variant-numeric:tabular-nums}
+  .price-controls select:focus,.price-controls input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,110,117,.12)}
+  .price-out{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+  .price-tile{border:1px solid var(--rule);border-radius:var(--radius);padding:14px 16px}
+  .price-tile .pt-label{font-size:11.5px;color:var(--muted)}
+  .price-tile .pt-num{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:22px;font-variant-numeric:tabular-nums;margin-top:3px}
+  .price-tile.profit .pt-num{color:var(--profit)}
+
+  /* ---- Sticky tape ---- */
+  .tape{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:var(--ink);color:#fff;
+  }
+  .tape-inner{
+    max-width:960px;margin:0 auto;padding:11px 20px;
+    display:flex;gap:26px;align-items:center;flex-wrap:wrap;
+    font-variant-numeric:tabular-nums;font-size:13px;
+  }
+  .tape .tcell{display:flex;flex-direction:column;line-height:1.25}
+  .tape .tcell .tl{font-size:10.5px;color:#8fa2b0;letter-spacing:.04em}
+  .tape .tcell .tv{font-weight:600;font-size:14px}
+  .tape .tcell.spacer{flex:1}
+  .tape .tcell.grand .tv{font-family:"Space Grotesk",sans-serif;font-size:16px}
+  .flash{animation:flash .5s ease}
+  @keyframes flash{0%{color:var(--accent-2)}100%{color:#fff}}
+
+  footer{color:var(--muted);font-size:12px;padding:0 0 12px;text-align:center}
+
+  /* ---- Print ---- */
+  #printArea{display:none}
+  @media print{
+    body{background:#fff;padding:0}
+    .mast,.toolbar,main,.tape,footer{display:none!important}
+    #printArea{display:block!important;padding:28px}
+    #printArea h1{font-family:"Space Grotesk",sans-serif;font-size:22px;margin:0 0 2px}
+    #printArea .pmeta{color:#555;font-size:12px;margin-bottom:18px}
+    #printArea table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px}
+    #printArea th{text-align:left;border-bottom:1px solid #000;padding:5px 6px;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+    #printArea td{padding:4px 6px;border-bottom:1px solid #ddd}
+    #printArea .pnum{text-align:right;font-variant-numeric:tabular-nums}
+    #printArea .psec{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;margin:14px 0 6px}
+    #printArea .ptotal td{font-weight:700;border-top:1px solid #000;border-bottom:none}
+  }
+
+  @media (max-width:720px){
+    .hero{border-left:none;padding-left:0;text-align:left;width:100%}
+    .summary-grid{grid-template-columns:1fr}
+    .toolbar-inner{align-items:stretch}
+    .hero-num{font-size:40px}
+  }
+  @media (prefers-reduced-motion:reduce){.flash{animation:none}}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="wrap mast-inner">
+    <div class="mast-left" style="flex:1;min-width:280px">
+      <div class="kicker">Product cost sheet</div>
+      <input id="pName" class="title-input" placeholder="Untitled product" aria-label="Product name">
+      <div class="meta-row">
+        <div class="field"><label for="pSku">SKU / code</label><input id="pSku" placeholder="—"></div>
+        <div class="field"><label for="pQty">Units per run</label><input id="pQty" type="number" min="1" step="1"></div>
+        <div class="field"><label for="pDate">Date</label><input id="pDate" type="date"></div>
+        <div class="field"><label for="pCur">Currency</label>
+          <select id="pCur">
+            <option value="PHP">₱ PHP</option>
+            <option value="USD">$ USD</option>
+            <option value="EUR">€ EUR</option>
+            <option value="GBP">£ GBP</option>
+            <option value="AUD">$ AUD</option>
+            <option value="SGD">$ SGD</option>
+            <option value="JPY">¥ JPY</option>
+            <option value="INR">₹ INR</option>
+            <option value="CAD">$ CAD</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="hero">
+      <div class="hero-label">Cost per unit</div>
+      <div class="hero-num" id="heroCost">—</div>
+      <div class="hero-sub" id="heroSub">Total —</div>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="wrap toolbar-inner">
+    <nav class="tabs" role="tablist" aria-label="Cost sheet sections">
+      <button class="tab" role="tab" data-tab="materials" aria-selected="true">Materials</button>
+      <button class="tab" role="tab" data-tab="labor" aria-selected="false">Labor</button>
+      <button class="tab" role="tab" data-tab="overhead" aria-selected="false">Overhead</button>
+      <button class="tab" role="tab" data-tab="summary" aria-selected="false">Summary</button>
+    </nav>
+    <div class="actions">
+      <button class="btn" data-action="sample">Load sample</button>
+      <button class="btn" data-action="clear">Clear</button>
+      <button class="btn" data-action="import">Import</button>
+      <button class="btn" data-action="csv">Export CSV</button>
+      <button class="btn" data-action="json">Save JSON</button>
+      <button class="btn primary" data-action="print">Print sheet</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+  <!-- Materials -->
+  <section class="panel" id="tab-materials">
+    <div class="panel-head">
+      <h2>Direct materials</h2>
+      <p>The raw materials and components consumed in one production run. Line total updates as you type.</p>
+    </div>
+    <table class="ledger">
+      <thead><tr>
+        <th>Material</th><th class="num">Qty</th><th>Unit</th><th class="num">Unit cost</th><th class="num">Line total</th><th></th>
+      </tr></thead>
+      <tbody id="matBody"></tbody>
+    </table>
+    <div class="add-row"><button class="add-btn" data-add="materials">+ Add material</button></div>
+    <div class="panel-foot">
+      <div class="foot-note">
+        <label for="scrapPct">Scrap / waste allowance (%)</label>
+        <input id="scrapPct" type="number" min="0" step="0.1" class="num">
+      </div>
+      <div class="subtotals">
+        <div class="srow"><span class="lab">Materials subtotal</span><span class="val" id="matSub">—</span></div>
+        <div class="srow"><span class="lab">Scrap allowance</span><span class="val" id="matScrap">—</span></div>
+        <div class="srow total"><span>Direct materials</span><span id="matTotal">—</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Labor -->
+  <section class="panel" id="tab-labor">
+    <div class="panel-head">
+      <h2>Direct labor</h2>
+      <p>Time spent per run, by operation. Enter hours as decimals — 0.5 is 30 minutes.</p>
+    </div>
+    <table class="ledger">
+      <thead><tr>
+        <th>Operation</th><th class="num">Hours</th><th class="num">Rate / hr</th><th class="num">Line total</th><th></th>
+      </tr></thead>
+      <tbody id="labBody"></tbody>
+    </table>
+    <div class="add-row"><button class="add-btn" data-add="labor">+ Add operation</button></div>
+    <div class="panel-foot">
+      <div class="foot-note">Total labor hours: <strong id="labHours" class="num">—</strong></div>
+      <div class="subtotals">
+        <div class="srow total"><span>Direct labor</span><span id="labTotal">—</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Overhead -->
+  <section class="panel" id="tab-overhead">
+    <div class="panel-head">
+      <h2>Manufacturing overhead</h2>
+      <p>Indirect costs of production — utilities, rent, depreciation, indirect labor. Pick how you want to apply it.</p>
+    </div>
+    <div class="oh-method">
+      <label for="ohMethod">Overhead method</label>
+      <select id="ohMethod">
+        <option value="itemized">List overhead items directly</option>
+        <option value="pctLabor">Percent of direct labor</option>
+        <option value="pctPrime">Percent of prime cost</option>
+        <option value="perHour">Rate per labor hour</option>
+      </select>
+    </div>
+
+    <div id="ohItemizedWrap">
+      <table class="ledger">
+        <thead><tr><th>Overhead item</th><th class="num">Amount / run</th><th></th></tr></thead>
+        <tbody id="ohBody"></tbody>
+      </table>
+      <div class="add-row"><button class="add-btn" data-add="overhead">+ Add overhead item</button></div>
+    </div>
+
+    <div id="ohRateWrap" style="display:none">
+      <div class="rate-box">
+        <div class="field" style="flex:1">
+          <label id="ohRateLabel" for="ohRateInput">Overhead rate</label>
+          <div class="rate-input">
+            <input id="ohRateInput" type="number" min="0" step="0.1">
+            <span class="suffix" id="ohSuffix">%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="oh-result subtotals" style="max-width:300px">
+      <div class="srow total"><span>Applied overhead</span><span id="ohTotal">—</span></div>
+    </div>
+  </section>
+
+  <!-- Summary -->
+  <section class="panel" id="tab-summary">
+    <div class="panel-head">
+      <h2>Cost summary</h2>
+      <p>Everything rolls up here. Set a markup or a target margin to see a suggested selling price.</p>
+    </div>
+    <div class="summary-grid">
+      <div>
+        <div class="sheet">
+          <div class="srow"><span class="lab">Direct materials <span class="hint" id="sMatHint"></span></span><span class="val" id="sMat">—</span></div>
+          <div class="srow"><span class="lab">Direct labor</span><span class="val" id="sLab">—</span></div>
+          <div class="srow sub"><span class="lab">Prime cost</span><span class="val" id="sPrime">—</span></div>
+          <div class="srow"><span class="lab">Manufacturing overhead</span><span class="val" id="sOh">—</span></div>
+          <div class="srow grand"><span class="lab">Total cost / run</span><span class="val" id="sTotal">—</span></div>
+        </div>
+        <div class="perunit-card">
+          <div class="pu-label">Cost per unit</div>
+          <div class="pu-num" id="sPerUnit">—</div>
+          <div class="pu-sub" id="sPerUnitSub">— units per run</div>
+        </div>
+      </div>
+      <div>
+        <div class="comp">
+          <h3>Cost composition</h3>
+          <div class="comp-bar">
+            <span class="seg-mat" id="segMat" style="width:0"></span>
+            <span class="seg-lab" id="segLab" style="width:0"></span>
+            <span class="seg-oh" id="segOh" style="width:0"></span>
+          </div>
+          <div class="comp-legend">
+            <div class="lrow"><span class="dot seg-mat"></span><span class="lname">Materials</span><span class="lval" id="lgMatVal">—</span><span class="lpct" id="lgMat">—</span></div>
+            <div class="lrow"><span class="dot seg-lab"></span><span class="lname">Labor</span><span class="lval" id="lgLabVal">—</span><span class="lpct" id="lgLab">—</span></div>
+            <div class="lrow"><span class="dot seg-oh"></span><span class="lname">Overhead</span><span class="lval" id="lgOhVal">—</span><span class="lpct" id="lgOh">—</span></div>
+          </div>
+        </div>
+
+        <div class="pricing">
+          <h3>Pricing</h3>
+          <div class="price-controls">
+            <div class="field">
+              <label for="priceMode">Method</label>
+              <select id="priceMode">
+                <option value="markup">Markup on cost</option>
+                <option value="margin">Target gross margin</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="priceVal" id="priceValLabel">Markup %</label>
+              <input id="priceVal" type="number" min="0" step="0.5" class="num">
+            </div>
+          </div>
+          <div class="price-out">
+            <div class="price-tile"><div class="pt-label">Selling price / unit</div><div class="pt-num" id="pSell">—</div></div>
+            <div class="price-tile profit"><div class="pt-label">Profit / unit</div><div class="pt-num" id="pProfit">—</div></div>
+            <div class="price-tile"><div class="pt-label">Revenue / run</div><div class="pt-num" id="pRev">—</div></div>
+            <div class="price-tile profit"><div class="pt-label">Profit / run</div><div class="pt-num" id="pTotProfit">—</div></div>
+          </div>
+          <div style="margin-top:12px;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums">
+            Gross margin: <strong id="pMargin">—</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="tape">
+  <div class="tape-inner">
+    <div class="tcell"><span class="tl">Materials</span><span class="tv" id="tMat">—</span></div>
+    <div class="tcell"><span class="tl">Labor</span><span class="tv" id="tLab">—</span></div>
+    <div class="tcell"><span class="tl">Overhead</span><span class="tv" id="tOh">—</span></div>
+    <div class="tcell spacer"></div>
+    <div class="tcell grand"><span class="tl">Total / run</span><span class="tv" id="tTotal">—</span></div>
+    <div class="tcell grand"><span class="tl">Per unit</span><span class="tv" id="tUnit">—</span></div>
+  </div>
+</div>
+
+<footer class="wrap">Runs entirely in your browser — nothing is uploaded. Use Save&nbsp;JSON to keep a copy, Import to reopen it.</footer>
+
+<datalist id="units">
+  <option value="pcs"><option value="kg"><option value="g"><option value="L"><option value="mL">
+  <option value="m"><option value="cm"><option value="box"><option value="pack"><option value="set"><option value="roll"><option value="sheet">
+</datalist>
+
+<div id="printArea"></div>
+<input type="file" id="fileInput" accept="application/json,.json" style="display:none">
+
+<script>
+"use strict";
+
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+function sampleState(){
+  return {
+    meta:{ name:"Signature Soy Candle", sku:"CNDL-8OZ-01", quantity:100,
+           currency:"PHP", date:new Date().toISOString().slice(0,10) },
+    materials:[
+      {id:uid(), name:"Soy wax",            qty:20,  unit:"kg",  unitCost:180},
+      {id:uid(), name:"Fragrance oil",      qty:1.2, unit:"L",   unitCost:950},
+      {id:uid(), name:"Cotton wick",        qty:100, unit:"pcs", unitCost:4},
+      {id:uid(), name:"Glass jar 8oz",      qty:100, unit:"pcs", unitCost:45},
+      {id:uid(), name:"Label + gift box",   qty:100, unit:"set", unitCost:12},
+    ],
+    scrapPct:3,
+    labor:[
+      {id:uid(), name:"Melting & pouring",  hours:6, rate:120},
+      {id:uid(), name:"Curing & QC",        hours:2, rate:120},
+      {id:uid(), name:"Trimming & packing", hours:3, rate:110},
+    ],
+    overhead:{ method:"itemized",
+      items:[
+        {id:uid(), name:"Electricity",               amount:450},
+        {id:uid(), name:"Workshop rent (allocated)", amount:1500},
+        {id:uid(), name:"Equipment depreciation",    amount:300},
+      ],
+      pctLabor:60, pctPrime:25, perHour:90 },
+    pricing:{ mode:"markup", value:45 }
+  };
+}
+function emptyState(){
+  return {
+    meta:{ name:"", sku:"", quantity:1, currency:"PHP", date:new Date().toISOString().slice(0,10) },
+    materials:[{id:uid(),name:"",qty:0,unit:"pcs",unitCost:0}],
+    scrapPct:0,
+    labor:[{id:uid(),name:"",hours:0,rate:0}],
+    overhead:{ method:"itemized", items:[{id:uid(),name:"",amount:0}], pctLabor:0, pctPrime:0, perHour:0 },
+    pricing:{ mode:"markup", value:0 }
+  };
+}
+
+let state = sampleState();
+
+/* ---------- formatting ---------- */
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+function fmt(n){
+  if(!isFinite(n)) n = 0;
+  try{ return new Intl.NumberFormat(undefined,{style:"currency",currency:state.meta.currency}).format(n); }
+  catch(e){ return n.toFixed(2); }
+}
+
+/* ---------- calculations ---------- */
+function calc(){
+  const matSub = state.materials.reduce((s,m)=> s + num(m.qty)*num(m.unitCost), 0);
+  const scrap  = matSub * num(state.scrapPct)/100;
+  const matTotal = matSub + scrap;
+
+  const labTotal = state.labor.reduce((s,l)=> s + num(l.hours)*num(l.rate), 0);
+  const labHours = state.labor.reduce((s,l)=> s + num(l.hours), 0);
+
+  const prime = matTotal + labTotal;
+  const oh = state.overhead;
+  let ohTotal = 0;
+  if(oh.method==="itemized") ohTotal = oh.items.reduce((s,i)=> s + num(i.amount), 0);
+  else if(oh.method==="pctLabor") ohTotal = labTotal * num(oh.pctLabor)/100;
+  else if(oh.method==="pctPrime") ohTotal = prime * num(oh.pctPrime)/100;
+  else if(oh.method==="perHour") ohTotal = labHours * num(oh.perHour);
+
+  const total = prime + ohTotal;
+  const qty = Math.max(0, num(state.meta.quantity));
+  const perUnit = qty>0 ? total/qty : 0;
+
+  // pricing
+  const pv = num(state.pricing.value);
+  let sell = 0;
+  if(state.pricing.mode==="markup") sell = perUnit*(1+pv/100);
+  else { const d = 1 - pv/100; sell = d>0 ? perUnit/d : 0; }
+  const profitU = sell - perUnit;
+  const revenue = sell*qty;
+  const profitRun = profitU*qty;
+  const margin = sell>0 ? (profitU/sell)*100 : 0;
+
+  return {matSub,scrap,matTotal,labTotal,labHours,prime,ohTotal,total,qty,perUnit,sell,profitU,revenue,profitRun,margin};
+}
+
+/* ---------- row builders ---------- */
+function matRow(m){
+  return `<tr data-id="${m.id}">
+    <td><input class="cell-input" data-sec="materials" data-field="name" data-id="${m.id}" value="${esc(m.name)}" placeholder="e.g. Soy wax"></td>
+    <td class="num qty-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="materials" data-field="qty" data-id="${m.id}" value="${m.qty}"></td>
+    <td class="unit-cell"><input class="cell-input" list="units" data-sec="materials" data-field="unit" data-id="${m.id}" value="${esc(m.unit)}" placeholder="unit"></td>
+    <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="materials" data-field="unitCost" data-id="${m.id}" value="${m.unitCost}"></td>
+    <td class="num line" data-line="materials" data-id="${m.id}">—</td>
+    <td class="rm"><button class="rm-btn" data-remove="materials" data-id="${m.id}" title="Remove" aria-label="Remove row">×</button></td>
+  </tr>`;
+}
+function labRow(l){
+  return `<tr data-id="${l.id}">
+    <td><input class="cell-input" data-sec="labor" data-field="name" data-id="${l.id}" value="${esc(l.name)}" placeholder="e.g. Assembly"></td>
+    <td class="num qty-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="labor" data-field="hours" data-id="${l.id}" value="${l.hours}"></td>
+    <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="labor" data-field="rate" data-id="${l.id}" value="${l.rate}"></td>
+    <td class="num line" data-line="labor" data-id="${l.id}">—</td>
+    <td class="rm"><button class="rm-btn" data-remove="labor" data-id="${l.id}" title="Remove" aria-label="Remove row">×</button></td>
+  </tr>`;
+}
+function ohRow(i){
+  return `<tr data-id="${i.id}">
+    <td><input class="cell-input" data-sec="overhead" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="e.g. Electricity"></td>
+    <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="overhead" data-field="amount" data-id="${i.id}" value="${i.amount}"></td>
+    <td class="rm"><button class="rm-btn" data-remove="overhead" data-id="${i.id}" title="Remove" aria-label="Remove row">×</button></td>
+  </tr>`;
+}
+const esc = s => String(s??"").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+
+/* ---------- full render (rebuilds inputs) ---------- */
+function render(){
+  // meta
+  byId("pName").value = state.meta.name;
+  byId("pSku").value  = state.meta.sku;
+  byId("pQty").value  = state.meta.quantity;
+  byId("pDate").value = state.meta.date;
+  byId("pCur").value  = state.meta.currency;
+  byId("scrapPct").value = state.scrapPct;
+  byId("priceMode").value = state.pricing.mode;
+  byId("priceVal").value = state.pricing.value;
+
+  byId("matBody").innerHTML = state.materials.length
+    ? state.materials.map(matRow).join("")
+    : `<tr><td colspan="6" class="empty">No materials yet — add your first one below.</td></tr>`;
+  byId("labBody").innerHTML = state.labor.length
+    ? state.labor.map(labRow).join("")
+    : `<tr><td colspan="5" class="empty">No operations yet — add one below.</td></tr>`;
+
+  byId("ohMethod").value = state.overhead.method;
+  byId("ohBody").innerHTML = state.overhead.items.length
+    ? state.overhead.items.map(ohRow).join("")
+    : `<tr><td colspan="3" class="empty">No overhead items yet — add one below.</td></tr>`;
+
+  renderOverheadMode();
+  recompute();
+}
+
+/* toggle overhead sub-UI without rebuilding rows */
+function renderOverheadMode(){
+  const m = state.overhead.method;
+  const itemized = m==="itemized";
+  byId("ohItemizedWrap").style.display = itemized ? "" : "none";
+  byId("ohRateWrap").style.display = itemized ? "none" : "";
+  if(!itemized){
+    const map = {
+      pctLabor:["Overhead rate (% of direct labor)","%",state.overhead.pctLabor],
+      pctPrime:["Overhead rate (% of prime cost)","%",state.overhead.pctPrime],
+      perHour :["Overhead rate (per labor hour)", currencySymbol()+"/hr", state.overhead.perHour],
+    };
+    const [label,suffix,val] = map[m];
+    byId("ohRateLabel").textContent = label;
+    byId("ohSuffix").textContent = suffix;
+    byId("ohRateInput").value = val;
+  }
+}
+function currencySymbol(){
+  try{
+    const parts = new Intl.NumberFormat(undefined,{style:"currency",currency:state.meta.currency}).formatToParts(0);
+    const c = parts.find(p=>p.type==="currency"); return c?c.value:"";
+  }catch(e){ return ""; }
+}
+
+/* ---------- recompute (updates displayed figures only) ---------- */
+function recompute(){
+  const c = calc();
+
+  // line totals
+  state.materials.forEach(m=>{
+    const cell = document.querySelector(`[data-line="materials"][data-id="${m.id}"]`);
+    if(cell) cell.textContent = fmt(num(m.qty)*num(m.unitCost));
+  });
+  state.labor.forEach(l=>{
+    const cell = document.querySelector(`[data-line="labor"][data-id="${l.id}"]`);
+    if(cell) cell.textContent = fmt(num(l.hours)*num(l.rate));
+  });
+
+  // subtotals
+  setText("matSub", fmt(c.matSub));
+  setText("matScrap", fmt(c.scrap));
+  setText("matTotal", fmt(c.matTotal));
+  setText("labHours", c.labHours.toLocaleString(undefined,{maximumFractionDigits:2}));
+  setText("labTotal", fmt(c.labTotal));
+  setText("ohTotal", fmt(c.ohTotal));
+
+  // hero
+  setText("heroCost", c.qty>0 ? fmt(c.perUnit) : "—");
+  setText("heroSub", "Total " + fmt(c.total));
+
+  // tape (with flash on total)
+  setText("tMat", fmt(c.matTotal));
+  setText("tLab", fmt(c.labTotal));
+  setText("tOh", fmt(c.ohTotal));
+  flash("tTotal", fmt(c.total));
+  setText("tUnit", c.qty>0 ? fmt(c.perUnit) : "—");
+
+  // summary
+  setText("sMat", fmt(c.matTotal));
+  setText("sMatHint", c.scrap>0 ? `incl. ${num(state.scrapPct)}% scrap` : "");
+  setText("sLab", fmt(c.labTotal));
+  setText("sPrime", fmt(c.prime));
+  setText("sOh", fmt(c.ohTotal));
+  setText("sTotal", fmt(c.total));
+  setText("sPerUnit", c.qty>0 ? fmt(c.perUnit) : "—");
+  setText("sPerUnitSub", (c.qty||0).toLocaleString() + " units per run");
+
+  // composition
+  const base = c.total>0 ? c.total : 1;
+  const pm = c.matTotal/base*100, pl = c.labTotal/base*100, po = c.ohTotal/base*100;
+  byId("segMat").style.width = pm+"%";
+  byId("segLab").style.width = pl+"%";
+  byId("segOh").style.width  = po+"%";
+  setText("lgMat", pct(pm)); setText("lgLab", pct(pl)); setText("lgOh", pct(po));
+  setText("lgMatVal", fmt(c.matTotal)); setText("lgLabVal", fmt(c.labTotal)); setText("lgOhVal", fmt(c.ohTotal));
+
+  // pricing
+  byId("priceValLabel").textContent = state.pricing.mode==="markup" ? "Markup %" : "Target margin %";
+  setText("pSell", c.qty>0 ? fmt(c.sell) : "—");
+  setText("pProfit", c.qty>0 ? fmt(c.profitU) : "—");
+  setText("pRev", c.qty>0 ? fmt(c.revenue) : "—");
+  setText("pTotProfit", c.qty>0 ? fmt(c.profitRun) : "—");
+  setText("pMargin", c.qty>0 ? pct(c.margin) : "—");
+}
+const pct = n => (isFinite(n)?n:0).toFixed(1)+"%";
+const byId = id => document.getElementById(id);
+const setText = (id,t) => { const el=byId(id); if(el) el.textContent = t; };
+function flash(id,t){ const el=byId(id); if(!el) return; if(el.textContent!==t){ el.textContent=t; el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); } }
+
+/* ---------- events ---------- */
+function onInput(e){
+  const t = e.target;
+  const id = t.id;
+  if(id==="pName"){ state.meta.name = t.value; return; }
+  if(id==="pSku"){ state.meta.sku = t.value; return; }
+  if(id==="pQty"){ state.meta.quantity = t.value; recompute(); return; }
+  if(id==="pDate"){ state.meta.date = t.value; return; }
+  if(id==="pCur"){ state.meta.currency = t.value; renderOverheadMode(); recompute(); return; }
+  if(id==="scrapPct"){ state.scrapPct = t.value; recompute(); return; }
+  if(id==="ohMethod"){ state.overhead.method = t.value; renderOverheadMode(); recompute(); return; }
+  if(id==="ohRateInput"){
+    const m = state.overhead.method;
+    if(m==="pctLabor") state.overhead.pctLabor = t.value;
+    else if(m==="pctPrime") state.overhead.pctPrime = t.value;
+    else if(m==="perHour") state.overhead.perHour = t.value;
+    recompute(); return;
+  }
+  if(id==="priceMode"){ state.pricing.mode = t.value; recompute(); return; }
+  if(id==="priceVal"){ state.pricing.value = t.value; recompute(); return; }
+
+  const sec = t.dataset.sec, field = t.dataset.field, rid = t.dataset.id;
+  if(sec && field && rid){
+    const arr = sec==="overhead" ? state.overhead.items : state[sec];
+    const row = arr.find(r=>r.id===rid);
+    if(row){ row[field] = t.value; recompute(); }
+  }
+}
+
+function onClick(e){
+  const t = e.target.closest("button");
+  if(!t) return;
+
+  if(t.dataset.tab){ switchTab(t.dataset.tab); return; }
+
+  if(t.dataset.add){
+    const sec = t.dataset.add;
+    if(sec==="materials"){ state.materials.push({id:uid(),name:"",qty:0,unit:"pcs",unitCost:0}); byId("matBody").innerHTML = state.materials.map(matRow).join(""); }
+    if(sec==="labor"){ state.labor.push({id:uid(),name:"",hours:0,rate:0}); byId("labBody").innerHTML = state.labor.map(labRow).join(""); }
+    if(sec==="overhead"){ state.overhead.items.push({id:uid(),name:"",amount:0}); byId("ohBody").innerHTML = state.overhead.items.map(ohRow).join(""); }
+    recompute();
+    const body = sec==="materials"?"matBody":sec==="labor"?"labBody":"ohBody";
+    const last = byId(body).querySelector("tr:last-child input");
+    if(last) last.focus();
+    return;
+  }
+
+  if(t.dataset.remove){
+    const sec = t.dataset.remove, rid = t.dataset.id;
+    if(sec==="overhead") state.overhead.items = state.overhead.items.filter(r=>r.id!==rid);
+    else state[sec] = state[sec].filter(r=>r.id!==rid);
+    render();
+    switchTab(currentTab); // keep tab
+    return;
+  }
+
+  if(t.dataset.action){ handleAction(t.dataset.action); return; }
+}
+
+let currentTab = "materials";
+function switchTab(name){
+  currentTab = name;
+  document.querySelectorAll(".tab").forEach(b=> b.setAttribute("aria-selected", b.dataset.tab===name));
+  document.querySelectorAll(".panel").forEach(p=> p.classList.toggle("active", p.id==="tab-"+name));
+}
+
+function handleAction(a){
+  if(a==="sample"){ state = sampleState(); render(); switchTab(currentTab); }
+  else if(a==="clear"){
+    if(confirm("Clear all rows and start a blank cost sheet?")){ state = emptyState(); render(); switchTab(currentTab); }
+  }
+  else if(a==="json") downloadJSON();
+  else if(a==="csv") downloadCSV();
+  else if(a==="print"){ buildPrint(); window.print(); }
+  else if(a==="import") byId("fileInput").click();
+}
+
+/* ---------- export / import ---------- */
+function download(filename, text, type){
+  const blob = new Blob([text], {type});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+function slug(){ return (state.meta.name||"product").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "product"; }
+
+function downloadJSON(){
+  download(slug()+"-cost.json", JSON.stringify(state,null,2), "application/json");
+}
+function csvCell(v){ const s=String(v??""); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+function downloadCSV(){
+  const c = calc(); const L=[];
+  const row = (...a)=> L.push(a.map(csvCell).join(","));
+  row("Product cost sheet");
+  row("Product", state.meta.name); row("SKU", state.meta.sku);
+  row("Units per run", state.meta.quantity); row("Currency", state.meta.currency); row("Date", state.meta.date);
+  row("");
+  row("DIRECT MATERIALS"); row("Material","Qty","Unit","Unit cost","Line total");
+  state.materials.forEach(m=> row(m.name, m.qty, m.unit, m.unitCost, num(m.qty)*num(m.unitCost)));
+  row("Materials subtotal","","","", c.matSub);
+  row("Scrap/waste %", state.scrapPct); row("Scrap allowance","","","", c.scrap);
+  row("Direct materials","","","", c.matTotal);
+  row("");
+  row("DIRECT LABOR"); row("Operation","Hours","Rate/hr","Line total");
+  state.labor.forEach(l=> row(l.name, l.hours, l.rate, num(l.hours)*num(l.rate)));
+  row("Total labor hours", c.labHours); row("Direct labor","","", c.labTotal);
+  row("");
+  row("MANUFACTURING OVERHEAD"); row("Method", state.overhead.method);
+  if(state.overhead.method==="itemized"){
+    row("Item","Amount");
+    state.overhead.items.forEach(i=> row(i.name, i.amount));
+  } else {
+    const rate = state.overhead.method==="pctLabor"?state.overhead.pctLabor
+               : state.overhead.method==="pctPrime"?state.overhead.pctPrime : state.overhead.perHour;
+    row("Rate", rate);
+  }
+  row("Applied overhead","", c.ohTotal);
+  row("");
+  row("SUMMARY");
+  row("Prime cost", c.prime);
+  row("Total cost / run", c.total);
+  row("Cost per unit", c.perUnit);
+  row("Pricing method", state.pricing.mode); row("Pricing value %", state.pricing.value);
+  row("Selling price / unit", c.sell);
+  row("Profit / unit", c.profitU);
+  row("Gross margin %", c.margin.toFixed(2));
+  download(slug()+"-cost.csv", L.join("\n"), "text/csv");
+}
+
+function importJSON(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const d = JSON.parse(reader.result);
+      if(!d.meta || !Array.isArray(d.materials)) throw new Error("shape");
+      // normalise / backfill ids
+      d.materials.forEach(m=> m.id = m.id||uid());
+      (d.labor||[]).forEach(l=> l.id = l.id||uid());
+      d.labor = d.labor||[];
+      d.overhead = d.overhead||{method:"itemized",items:[],pctLabor:0,pctPrime:0,perHour:0};
+      d.overhead.items = d.overhead.items||[];
+      d.overhead.items.forEach(i=> i.id = i.id||uid());
+      d.pricing = d.pricing||{mode:"markup",value:0};
+      if(d.scrapPct==null) d.scrapPct = 0;
+      state = d; render(); switchTab(currentTab);
+    }catch(err){ alert("That file doesn't look like a saved cost sheet."); }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- print sheet ---------- */
+function buildPrint(){
+  const c = calc();
+  const money = fmt;
+  const matRows = state.materials.map(m=>
+    `<tr><td>${esc(m.name)||"—"}</td><td class="pnum">${m.qty}</td><td>${esc(m.unit)}</td><td class="pnum">${money(num(m.unitCost))}</td><td class="pnum">${money(num(m.qty)*num(m.unitCost))}</td></tr>`).join("");
+  const labRows = state.labor.map(l=>
+    `<tr><td>${esc(l.name)||"—"}</td><td class="pnum">${l.hours}</td><td class="pnum">${money(num(l.rate))}</td><td class="pnum">${money(num(l.hours)*num(l.rate))}</td></tr>`).join("");
+  let ohRows;
+  if(state.overhead.method==="itemized"){
+    ohRows = state.overhead.items.map(i=>`<tr><td>${esc(i.name)||"—"}</td><td class="pnum">${money(num(i.amount))}</td></tr>`).join("");
+  } else {
+    const label = {pctLabor:"% of direct labor",pctPrime:"% of prime cost",perHour:"per labor hour"}[state.overhead.method];
+    const rate = state.overhead.method==="perHour"?money(num(state.overhead.perHour)):
+      num(state.overhead.method==="pctLabor"?state.overhead.pctLabor:state.overhead.pctPrime)+"%";
+    ohRows = `<tr><td>Applied ${label} (${rate})</td><td class="pnum">${money(c.ohTotal)}</td></tr>`;
+  }
+  byId("printArea").innerHTML = `
+    <h1>${esc(state.meta.name)||"Product cost sheet"}</h1>
+    <div class="pmeta">${esc(state.meta.sku)?esc(state.meta.sku)+" · ":""}${state.meta.quantity} units per run · ${state.meta.date} · ${state.meta.currency}</div>
+    <div class="psec">Direct materials</div>
+    <table><thead><tr><th>Material</th><th class="pnum">Qty</th><th>Unit</th><th class="pnum">Unit cost</th><th class="pnum">Line total</th></tr></thead>
+    <tbody>${matRows}
+      <tr><td colspan="4">Materials subtotal</td><td class="pnum">${money(c.matSub)}</td></tr>
+      <tr><td colspan="4">Scrap allowance (${num(state.scrapPct)}%)</td><td class="pnum">${money(c.scrap)}</td></tr>
+      <tr class="ptotal"><td colspan="4">Direct materials</td><td class="pnum">${money(c.matTotal)}</td></tr></tbody></table>
+    <div class="psec">Direct labor</div>
+    <table><thead><tr><th>Operation</th><th class="pnum">Hours</th><th class="pnum">Rate/hr</th><th class="pnum">Line total</th></tr></thead>
+    <tbody>${labRows}<tr class="ptotal"><td colspan="3">Direct labor (${c.labHours} hrs)</td><td class="pnum">${money(c.labTotal)}</td></tr></tbody></table>
+    <div class="psec">Manufacturing overhead</div>
+    <table><tbody>${ohRows}<tr class="ptotal"><td>Applied overhead</td><td class="pnum">${money(c.ohTotal)}</td></tr></tbody></table>
+    <div class="psec">Summary</div>
+    <table><tbody>
+      <tr><td>Prime cost</td><td class="pnum">${money(c.prime)}</td></tr>
+      <tr class="ptotal"><td>Total cost / run</td><td class="pnum">${money(c.total)}</td></tr>
+      <tr class="ptotal"><td>Cost per unit</td><td class="pnum">${c.qty>0?money(c.perUnit):"—"}</td></tr>
+      <tr><td>Selling price / unit (${state.pricing.mode} ${num(state.pricing.value)}%)</td><td class="pnum">${c.qty>0?money(c.sell):"—"}</td></tr>
+      <tr><td>Profit / unit &nbsp;·&nbsp; gross margin ${c.margin.toFixed(1)}%</td><td class="pnum">${c.qty>0?money(c.profitU):"—"}</td></tr>
+    </tbody></table>`;
+}
+
+/* ---------- init ---------- */
+document.body.addEventListener("input", onInput);
+document.body.addEventListener("change", onInput);
+document.body.addEventListener("click", onClick);
+byId("fileInput").addEventListener("change", e=>{ if(e.target.files[0]) importJSON(e.target.files[0]); e.target.value=""; });
+window.addEventListener("beforeprint", buildPrint);
+
+render();
+switchTab("materials");
+</script>
+</body>
+</html>
