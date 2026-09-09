@@ -100,6 +100,7 @@
   .libcat-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
   .cat-name{flex:1;border:none;border-bottom:1px solid transparent;background:transparent;font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;padding:4px 2px}
   .cat-name:hover{border-bottom-color:var(--soft)} .cat-name:focus{outline:none;border-bottom-color:var(--accent)}
+  .cat-kind{border:1px solid var(--rule);border-radius:7px;padding:5px 8px;font-size:12.5px;background:var(--surface)}
 
   main{padding:26px 0 40px}
   .panel{display:none} .panel.active{display:block}
@@ -365,7 +366,7 @@
 
   <section class="panel" id="tab-library">
     <div class="panel-head"><h2>Library</h2>
-      <p>Define each raw material, overhead rate and packaging item once, with its cost. Products pick from here and you just enter quantities. Change a cost here and every product using it updates — perfect for price changes and inflation. <strong>Shared</strong> items are available to every business type; <strong>this type</strong> items are only for the current one.</p></div>
+      <p>One shared library for the whole business. Make your own <strong>categories</strong> (Food, Industry, Utilities, Packaging…) and set each category’s <strong>kind</strong> — Raw material, Overhead, or Packaging. Add items with a unit cost. Products search this library and pick items; change a cost here and every product using it reprices. Ideal for inflation.</p></div>
     <div id="libBody"></div>
   </section>
 
@@ -409,7 +410,7 @@
 
 <div id="printArea"></div>
 <div id="pickModal" class="modal-bg" style="display:none"><div class="modal" style="max-width:520px">
-  <h3>Add from library</h3>
+  <h3 id="pickTitle">Add from library</h3>
   <p style="margin-bottom:12px">Search your materials, overhead and packaging — from every category. Manage items in the Library tab.</p>
   <input id="pickSearch" type="text" placeholder="Search…" style="width:100%;border:1px solid var(--rule);border-radius:9px;padding:10px 12px;font-size:15px">
   <div id="pickList" class="pick-list"></div>
@@ -444,29 +445,26 @@
 "use strict";
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-function emptyLib(){ return { categories:[{id:uid(),name:"Raw materials",items:[]}] }; }
+const KINDS=["material","overhead","packaging"];
+const KIND_LABEL={material:"Raw material",overhead:"Overhead",packaging:"Packaging"};
+const BUCKET_KIND={materials:"material",overhead:"overhead",packaging:"packaging"};
+function inferKind(name){ const n=(name||"").toLowerCase(); if(/overhead|utilit|electric|gas|lpg|transport|rent|fuel|water/.test(n)) return "overhead"; if(/packag|container|box|bag|cup|wrap|label|utensil/.test(n)) return "packaging"; return "material"; }
 function emptyProduct(name){
   return { id:uid(), name:name||"New product", sku:"", servings:5, markup:60, available:true, price:0,
-    materials:[], packaging:[], overhead:[],
-    web:{show:true,desc:"",img:""} };
+    materials:[], packaging:[], overhead:[], web:{show:true,desc:"",img:""} };
 }
-function emptyType(name){
-  const p=emptyProduct("Product A");
-  return { id:uid(), name:name||"New type", library:{categories:[]}, products:[p], activeId:p.id };
-}
+function emptyType(name){ const p=emptyProduct("Product A"); return { id:uid(), name:name||"New type", products:[p], activeId:p.id }; }
 function sampleState(){
   const L={ categories:[
-    {id:"c_util",name:"Utilities",items:[{id:"o_elec",name:"Electricity",unit:"kWh",unitCost:16},{id:"o_lpg",name:"LPG gas",unit:"kg",unitCost:90},{id:"o_trans",name:"Transport",unit:"trip",unitCost:150}]},
-    {id:"c_pack",name:"Packaging",items:[{id:"pk_cont",name:"Container + lid",unit:"each",unitCost:8},{id:"pk_uten",name:"Utensil + napkin",unit:"each",unitCost:2},{id:"pk_small",name:"Small container",unit:"each",unitCost:3}]},
-    {id:"c_staple",name:"Staples",items:[{id:"m_rice",name:"Rice",unit:"kg",unitCost:55},{id:"m_garlic",name:"Garlic",unit:"piece",unitCost:10},{id:"m_soy",name:"Soy sauce",unit:"liter",unitCost:60}]}
-  ]};
-  const TL={ categories:[
-    {id:"c_food",name:"Food ingredients",items:[{id:"m_mong",name:"Monggo beans",unit:"kg",unitCost:120},{id:"m_pork",name:"Pork",unit:"kg",unitCost:300},{id:"m_veg",name:"Veg & aromatics",unit:"set",unitCost:70},{id:"m_pasta",name:"Pasta",unit:"kg",unitCost:90},{id:"m_cream",name:"Cream & cheese",unit:"set",unitCost:180},{id:"m_bacon",name:"Bacon",unit:"kg",unitCost:350}]}
+    {id:"c_food",name:"Food ingredients",kind:"material",items:[{id:"m_mong",name:"Monggo beans",unit:"kg",unitCost:120},{id:"m_pork",name:"Pork",unit:"kg",unitCost:300},{id:"m_veg",name:"Veg & aromatics",unit:"set",unitCost:70},{id:"m_pasta",name:"Pasta",unit:"kg",unitCost:90},{id:"m_cream",name:"Cream & cheese",unit:"set",unitCost:180},{id:"m_bacon",name:"Bacon",unit:"kg",unitCost:350}]},
+    {id:"c_staple",name:"Staples",kind:"material",items:[{id:"m_rice",name:"Rice",unit:"kg",unitCost:55},{id:"m_garlic",name:"Garlic",unit:"piece",unitCost:10},{id:"m_soy",name:"Soy sauce",unit:"liter",unitCost:60}]},
+    {id:"c_util",name:"Utilities",kind:"overhead",items:[{id:"o_elec",name:"Electricity",unit:"kWh",unitCost:16},{id:"o_lpg",name:"LPG gas",unit:"kg",unitCost:90},{id:"o_trans",name:"Transport",unit:"trip",unitCost:150}]},
+    {id:"c_pack",name:"Packaging",kind:"packaging",items:[{id:"pk_cont",name:"Container + lid",unit:"each",unitCost:8},{id:"pk_uten",name:"Utensil + napkin",unit:"each",unitCost:2},{id:"pk_small",name:"Small container",unit:"each",unitCost:3}]}
   ]};
   const line=(ref,qty)=>({id:uid(),ref,qty});
   return { company:"Barluado's Kitchen", currency:"PHP", tagline:"Home-cooked lunch, made to order", orderLink:{label:"Order on Messenger",url:"https://m.me/syntax.premiero"},
     library:L, activeTypeId:"t1", types:[
-    { id:"t1", name:"Lunch menu", library:TL, activeId:"p1",
+    { id:"t1", name:"Lunch menu", activeId:"p1",
       products:[
         { id:"p1", name:"Monggo", sku:"MNG-01", servings:5, markup:40, available:true,
           materials:[line("m_mong",0.5),line("m_pork",0.3),line("m_veg",1),line("m_rice",1.5),line("m_garlic",3),line("m_soy",0.1)],
@@ -477,22 +475,20 @@ function sampleState(){
           packaging:[line("pk_cont",1),line("pk_uten",1)],
           overhead:[line("o_elec",2),line("o_lpg",0.4),line("o_trans",1)] },
         { id:"p3", name:"Extra plain rice", sku:"RICE-01", servings:5, markup:40, available:false,
-          materials:[line("m_rice",0.4)],
-          packaging:[line("pk_small",1)],
-          overhead:[line("o_elec",0.5),line("o_lpg",0.1)] }
+          materials:[line("m_rice",0.4)], packaging:[line("pk_small",1)], overhead:[line("o_elec",0.5),line("o_lpg",0.1)] }
       ]}
   ]};
 }
+function normCategory(c){ c.id=c.id||uid(); c.name=c.name||"Category"; if(!KINDS.includes(c.kind)) c.kind=inferKind(c.name);
+  c.items=Array.isArray(c.items)?c.items:[]; c.items.forEach(i=>{ i.id=i.id||uid(); if(i.unit==null) i.unit=""; if(i.unitCost==null) i.unitCost=0; }); return c; }
 function normLib(l){
   l=l||{categories:[]};
   if(!Array.isArray(l.categories)){
-    // migrate old {materials,overhead,packaging} shape into categories, preserving item ids
-    const cats=[]; const names={materials:"Raw materials",overhead:"Overhead",packaging:"Packaging"};
-    ["materials","overhead","packaging"].forEach(k=>{ if(Array.isArray(l[k])&&l[k].length) cats.push({id:uid(),name:names[k],items:l[k]}); });
-    l={categories:cats.length?cats:[{id:uid(),name:"Raw materials",items:[]}]};
+    const cats=[]; const info={materials:["Raw materials","material"],overhead:["Overhead","overhead"],packaging:["Packaging","packaging"]};
+    ["materials","overhead","packaging"].forEach(k=>{ if(Array.isArray(l[k])&&l[k].length) cats.push({id:uid(),name:info[k][0],kind:info[k][1],items:l[k]}); });
+    l={categories:cats};
   }
-  l.categories.forEach(c=>{ c.id=c.id||uid(); c.name=c.name||"Category"; c.items=Array.isArray(c.items)?c.items:[];
-    c.items.forEach(i=>{ i.id=i.id||uid(); if(i.unit==null) i.unit=""; if(i.unitCost==null) i.unitCost=0; }); });
+  l.categories.forEach(normCategory);
   return l;
 }
 function normLine(i){ i.id=i.id||uid(); if(i.ref==null) i.ref=""; if(i.qty==null) i.qty=0; return {id:i.id,ref:i.ref,qty:i.qty, _name:i.name,_unit:i.unit,_unitCost:i.unitCost,_amount:i.amount}; }
@@ -503,32 +499,33 @@ function normProduct(p){ p.id=p.id||uid();
   if(p.servings==null) p.servings=(p.expectedUnits!=null?p.expectedUnits:(p.yield!=null?p.yield:(p.quantity!=null?p.quantity:5)));
   if(p.available==null) p.available=true;
   if(p.price==null) p.price=0; if(p.markup==null) p.markup=60; p.web=p.web||{show:true,desc:"",img:""}; return p; }
-function migrateCustomLines(t){
-  // any old custom line (no ref but had a name/cost) becomes a library item in an "Imported" category
+function migrateCustomLines(s){
+  // old custom lines (no ref, had name/cost) → items in an "Imported" category (shared library)
   let imp=null;
-  const ensure=()=>{ if(imp) return imp; imp=t.library.categories.find(c=>c.name==="Imported"); if(!imp){ imp={id:uid(),name:"Imported",items:[]}; t.library.categories.push(imp);} return imp; };
+  const ensure=(kind)=>{ if(imp) return imp; imp=s.library.categories.find(c=>c.name==="Imported"); if(!imp){ imp={id:uid(),name:"Imported",kind:"material",items:[]}; s.library.categories.push(imp);} return imp; };
   const findOrAdd=(name,unit,cost)=>{ const c=ensure(); let it=c.items.find(x=>x.name===name&&numv(x.unitCost)===numv(cost)); if(!it){ it={id:uid(),name:name||"Item",unit:unit||"",unitCost:numv(cost)}; c.items.push(it);} return it.id; };
-  t.products.forEach(p=> ["materials","packaging","overhead"].forEach(sec=> p[sec].forEach(l=>{
+  s.types.forEach(t=> t.products.forEach(p=> ["materials","packaging","overhead"].forEach(sec=> p[sec].forEach(l=>{
     if(!l.ref){ const nm=l._name, ct=(l._amount!=null?l._amount:l._unitCost);
-      if((nm&&String(nm).length)||numv(ct)>0){ if(l._amount!=null && (l.qty==null||l.qty===0)) l.qty=1; l.ref=findOrAdd(nm, l._unit, ct); }
-    }
+      if((nm&&String(nm).length)||numv(ct)>0){ if(l._amount!=null && (l.qty==null||l.qty===0)) l.qty=1; l.ref=findOrAdd(nm,l._unit,ct); } }
     delete l._name; delete l._unit; delete l._unitCost; delete l._amount;
-  })));
+  }))));
 }
-function normType(t){ t.id=t.id||uid(); t.name=t.name||"Type"; t.library=normLib(t.library);
+function normType(t){ t.id=t.id||uid(); t.name=t.name||"Type";
   t.products=Array.isArray(t.products)&&t.products.length?t.products:[emptyProduct("Product A")]; t.products.forEach(normProduct);
-  migrateCustomLines(t);
   if(!t.products.find(p=>p.id===t.activeId)) t.activeId=t.products[0].id; return t; }
 function normalise(s){
   s.company=s.company||""; s.currency=s.currency||"PHP"; s.tagline=s.tagline||""; s.orderLink=s.orderLink||{label:"",url:""};
   s.library=normLib(s.library);
   if(!Array.isArray(s.types)){
-    if(Array.isArray(s.products)){ s.types=[normType({name:s.company||"Type 1",products:s.products})]; }
-    else if(s.meta&&Array.isArray(s.materials)){ s.types=[normType({name:"Type 1",products:[{name:s.meta.name,sku:s.meta.sku,servings:s.meta.quantity,materials:s.materials}]})]; }
+    if(Array.isArray(s.products)){ s.types=[{name:s.company||"Type 1",products:s.products}]; }
+    else if(s.meta&&Array.isArray(s.materials)){ s.types=[{name:"Type 1",products:[{name:s.meta.name,sku:s.meta.sku,servings:s.meta.quantity,materials:s.materials}]}]; }
     else s.types=[emptyType("Type 1")];
     delete s.products; delete s.overhead; delete s.dayCosts;
   }
+  // fold any per-type libraries into the single shared library (preserve item ids so refs resolve)
+  s.types.forEach(t=>{ if(t.library){ const tl=normLib(t.library); tl.categories.forEach(c=> s.library.categories.push(c)); delete t.library; } });
   s.types.forEach(normType);
+  migrateCustomLines(s);
   if(!s.types.find(t=>t.id===s.activeTypeId)) s.activeTypeId=s.types[0].id;
   return s;
 }
@@ -559,30 +556,28 @@ function showSaved(){ const el=byId("saveStatus"); if(!el) return; el.textConten
 let toastTimer=null;
 function toast(m){ const el=byId("toast"); if(!el) return; el.textContent=m; el.style.opacity="1"; el.style.transform="translateX(-50%) translateY(0)"; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.style.opacity="0"; el.style.transform="translateX(-50%) translateY(20px)"; },3400); }
 
-/* ---------- library resolution (category-based, shared + type) ---------- */
-function eachLibItem(t,cb){ const walk=(scope,lib)=> (lib&&lib.categories||[]).forEach(c=> c.items.forEach(it=> cb(it,c,scope)));
-  if(t) walk("type",t.library); walk("shared",state.library); }
-function resolveItem(ref,t){ if(!ref) return null; let f=null; eachLibItem(t,(it)=>{ if(it.id===ref&&!f) f=it; }); return f; }
-function allLibItems(t){ const a=[]; eachLibItem(t,(it,c,scope)=>a.push({it,cat:c.name,scope})); return a; }
-function lineInfo(line,t){ const it=resolveItem(line.ref,t); return it?{name:it.name,unit:it.unit,unitCost:numv(it.unitCost),missing:false}:{name:"(pick an item)",unit:"",unitCost:0,missing:!!line.ref}; }
-function lineCost(line,t){ const inf=lineInfo(line,t); return numv(line.qty)*numv(inf.unitCost); }
+/* ---------- library resolution (single shared library, categories carry kind) ---------- */
+function eachLibItem(cb){ (state.library.categories||[]).forEach(c=> c.items.forEach(it=> cb(it,c))); }
+function resolveItem(ref){ if(!ref) return null; let f=null; eachLibItem((it)=>{ if(it.id===ref&&!f) f=it; }); return f; }
+function catKindOf(ref){ let k=null; (state.library.categories||[]).forEach(c=> c.items.forEach(it=>{ if(it.id===ref) k=c.kind; })); return k; }
+function allLibItems(){ const a=[]; eachLibItem((it,c)=>a.push({it,cat:c.name,kind:c.kind})); return a; }
+function lineInfo(line){ const it=resolveItem(line.ref); return it?{name:it.name,unit:it.unit,unitCost:numv(it.unitCost),missing:false}:{name:"(pick an item)",unit:"",unitCost:0,missing:!!line.ref}; }
+function lineCost(line){ const inf=lineInfo(line); return numv(line.qty)*numv(inf.unitCost); }
 
 /* ---------- calculations ---------- */
-function directOf(p,t){
-  t=t||at();
-  const matBatch=p.materials.reduce((s,i)=> s+lineCost(i,t),0);
+function directOf(p){
+  const matBatch=p.materials.reduce((s,i)=> s+lineCost(i),0);
   const servings=Math.max(0,numv(p.servings));
   const matUnit=servings>0?matBatch/servings:0;
-  const packUnit=p.packaging.reduce((s,i)=> s+lineCost(i,t),0);
+  const packUnit=p.packaging.reduce((s,i)=> s+lineCost(i),0);
   const directUnit=matUnit+packUnit;
-  const ohBatch=p.overhead.reduce((s,i)=> s+lineCost(i,t),0);
+  const ohBatch=p.overhead.reduce((s,i)=> s+lineCost(i),0);
   const ohUnit=servings>0?ohBatch/servings:0;
   return {matBatch,servings,matUnit,packUnit,directUnit,ohBatch,ohUnit};
 }
 function roundPrice(x){ return Math.round(x); }
-function full(p,t){
-  t=t||at();
-  const d=directOf(p,t);
+function full(p){
+  const d=directOf(p);
   const total=d.directUnit+d.ohUnit;
   const markup=Math.max(0,numv(p.markup));
   const price=roundPrice(total*(1+markup/100));
@@ -591,14 +586,14 @@ function full(p,t){
 }
 function bizOf(t){
   let cost=0,sales=0,servs=0,ohTotal=0;
-  t.products.forEach(p=>{ const f=full(p,t); p.price=f.price; const s=Math.max(0,numv(p.servings)); cost+=f.total*s; sales+=f.price*s; servs+=s; ohTotal+=f.ohBatch; });
+  t.products.forEach(p=>{ const f=full(p); p.price=f.price; const s=Math.max(0,numv(p.servings)); cost+=f.total*s; sales+=f.price*s; servs+=s; ohTotal+=f.ohBatch; });
   const profit=sales-cost;
   return {cost,sales,profit,servs,ohTotal};
 }
 
-/* ---------- product rows (library-linked, no custom) ---------- */
-function lineRow(kind,i,t){
-  const inf=lineInfo(i,t);
+/* ---------- product rows (library-linked) ---------- */
+function lineRow(kind,i){
+  const inf=lineInfo(i);
   const nameCell=`<td><button class="pickbtn ${inf.missing?'miss':''}" data-pick="${kind}" data-row="${i.id}">${i.ref?esc(inf.name):"Choose item…"}${inf.missing?' — removed':''}</button></td>`;
   const qtyCell=`<td class="num qty-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="${kind}" data-field="qty" data-id="${i.id}" value="${i.qty}"></td>`;
   const unitCell=`<td class="unit-cell auto">${esc(inf.unit)||"—"}</td>`;
@@ -607,58 +602,54 @@ function lineRow(kind,i,t){
   const rm=`<td class="rm"><button class="rm-btn" data-remove="${kind}" data-id="${i.id}" aria-label="Remove">×</button></td>`;
   return `<tr data-id="${i.id}">${nameCell}${qtyCell}${unitCell}${costCell}${lineCell}${rm}</tr>`;
 }
-const matRow=(i,t)=>lineRow("materials",i,t||at());
-const packRow=(i,t)=>lineRow("packaging",i,t||at());
-const ovRow=(i,t)=>lineRow("overhead",i,t||at());
+const matRow=i=>lineRow("materials",i);
+const packRow=i=>lineRow("packaging",i);
+const ovRow=i=>lineRow("overhead",i);
 
-/* ---------- library editor (categories of items) ---------- */
-function libItemRow(scope,catId,i){
+/* ---------- library editor (categories with a kind) ---------- */
+function libItemRow(catId,i){
   return `<tr data-id="${i.id}">
-    <td><input class="cell-input" data-libscope="${scope}" data-cat="${catId}" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="e.g. Garlic"></td>
-    <td class="unit-cell"><input class="cell-input" data-libscope="${scope}" data-cat="${catId}" data-field="unit" data-id="${i.id}" value="${esc(i.unit)}" placeholder="unit (piece, kg, kWh…)"></td>
-    <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-libscope="${scope}" data-cat="${catId}" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>
-    <td class="rm"><button class="rm-btn" data-libitemremove="${scope}" data-cat="${catId}" data-id="${i.id}" aria-label="Remove">×</button></td></tr>`;
+    <td><input class="cell-input" data-cat="${catId}" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="e.g. Garlic"></td>
+    <td class="unit-cell"><input class="cell-input" data-cat="${catId}" data-field="unit" data-id="${i.id}" value="${esc(i.unit)}" placeholder="unit"></td>
+    <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-cat="${catId}" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>
+    <td class="rm"><button class="rm-btn" data-libitemremove="${catId}" data-id="${i.id}" aria-label="Remove">×</button></td></tr>`;
 }
-function libCatBlock(scope,c){
-  const rows=c.items.length?c.items.map(i=>libItemRow(scope,c.id,i)).join(""):`<tr><td colspan="4" class="empty">No items yet.</td></tr>`;
+function libCatBlock(c){
+  const rows=c.items.length?c.items.map(i=>libItemRow(c.id,i)).join(""):`<tr><td colspan="4" class="empty">No items yet.</td></tr>`;
+  const kindOpts=KINDS.map(k=>`<option value="${k}" ${c.kind===k?"selected":""}>${KIND_LABEL[k]}</option>`).join("");
   return `<div class="libcat">
     <div class="libcat-head">
-      <input class="cat-name" data-libscope="${scope}" data-catname="${c.id}" value="${esc(c.name)}" placeholder="Category name (e.g. Food)">
-      <button class="rm-btn" data-catremove="${scope}" data-id="${c.id}" title="Delete category" aria-label="Delete category">×</button>
+      <input class="cat-name" data-catname="${c.id}" value="${esc(c.name)}" placeholder="Category name (e.g. Food, Industry)">
+      <select class="cat-kind" data-catkind="${c.id}">${kindOpts}</select>
+      <button class="rm-btn" data-catremove="${c.id}" title="Delete category" aria-label="Delete category">×</button>
     </div>
     <table class="ledger"><thead><tr><th>Item</th><th>Unit</th><th class="num">Cost / unit</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="add-row"><button class="add-btn" data-libitemadd="${scope}" data-cat="${c.id}">+ Add item</button></div>
+    <div class="add-row"><button class="add-btn" data-libitemadd="${c.id}">+ Add item</button></div>
   </div>`;
 }
-function libScope(title,scope,lib){
-  const cats=lib.categories.map(c=>libCatBlock(scope,c)).join("");
-  return `<div class="section-sub first" style="margin-top:24px">${title}</div>${cats||'<p class="empty">No categories yet.</p>'}
-    <div class="add-row" style="max-width:320px"><button class="add-btn" data-catadd="${scope}">+ Add category</button></div>`;
-}
 function renderLibrary(){
-  const t=at();
-  byId("libBody").innerHTML =
-    libScope("Shared — all business types","shared",state.library) +
-    libScope(esc(t.name)+" — this type only","type",t.library);
+  const cats=state.library.categories.map(libCatBlock).join("");
+  byId("libBody").innerHTML = (cats||'<p class="empty">No categories yet.</p>') +
+    `<div class="add-row" style="max-width:360px"><button class="add-btn" data-catadd="1">+ Add category</button></div>`;
 }
 
-/* ---------- item picker modal ---------- */
+/* ---------- item picker (filtered to the bucket's kind) ---------- */
 let pickCtx=null;
-function openPicker(kind,rowId){ pickCtx={kind,rowId}; byId("pickSearch").value=""; renderPickList(""); byId("pickModal").style.display="flex"; setTimeout(()=>byId("pickSearch").focus(),30); }
+function openPicker(bucket,rowId){ pickCtx={bucket,kind:BUCKET_KIND[bucket],rowId}; byId("pickTitle").textContent="Add "+KIND_LABEL[pickCtx.kind].toLowerCase(); byId("pickSearch").value=""; renderPickList(""); byId("pickModal").style.display="flex"; setTimeout(()=>byId("pickSearch").focus(),30); }
 function closePicker(){ byId("pickModal").style.display="none"; pickCtx=null; }
 function renderPickList(q){
-  const t=at(); q=(q||"").toLowerCase().trim();
-  const items=allLibItems(t).filter(x=> !q || (x.it.name||"").toLowerCase().includes(q) || (x.cat||"").toLowerCase().includes(q));
-  if(!items.length){ byId("pickList").innerHTML=`<div class="empty" style="padding:24px">No items match. Add items in the Library tab.</div>`; return; }
+  if(!pickCtx) return; q=(q||"").toLowerCase().trim();
+  const items=allLibItems().filter(x=> x.kind===pickCtx.kind && (!q || (x.it.name||"").toLowerCase().includes(q) || (x.cat||"").toLowerCase().includes(q)));
+  if(!items.length){ byId("pickList").innerHTML=`<div class="empty" style="padding:24px">No ${KIND_LABEL[pickCtx.kind].toLowerCase()} items${q?" match":""}. Add some in the Library tab (category kind: ${KIND_LABEL[pickCtx.kind]}).</div>`; return; }
   byId("pickList").innerHTML=items.map(x=>`<button class="pick-item" data-pickid="${x.it.id}">
     <span class="pi-name">${esc(x.it.name)||"(unnamed)"}</span>
-    <span class="pi-meta">${esc(x.cat)} · ${x.scope==="shared"?"Shared":"This type"}</span>
+    <span class="pi-meta">${esc(x.cat)}</span>
     <span class="pi-cost">${fmt(numv(x.it.unitCost))}${x.it.unit?" / "+esc(x.it.unit):""}</span></button>`).join("");
 }
 function pickChoose(itemId){
   if(!pickCtx) return; const p=active();
-  if(pickCtx.rowId){ const row=p[pickCtx.kind].find(r=>r.id===pickCtx.rowId); if(row) row.ref=itemId; }
-  else { p[pickCtx.kind].push({id:uid(),ref:itemId,qty:(pickCtx.kind==="packaging"?1:1)}); }
+  if(pickCtx.rowId){ const row=p[pickCtx.bucket].find(r=>r.id===pickCtx.rowId); if(row) row.ref=itemId; }
+  else { p[pickCtx.bucket].push({id:uid(),ref:itemId,qty:1}); }
   closePicker(); renderProductRows(); renderProductBar(); recompute();
 }
 
@@ -701,17 +692,17 @@ const EMPTY_MAT=`<tr><td colspan="6" class="empty">No raw materials yet — add 
 const EMPTY_PACK=`<tr><td colspan="6" class="empty">No packaging yet — add one below.</td></tr>`;
 const EMPTY_OV=`<tr><td colspan="6" class="empty">No overhead yet — add one below.</td></tr>`;
 function renderProductRows(){ const t=at(), p=active();
-  byId("matBody").innerHTML=p.materials.length?p.materials.map(i=>matRow(i,t)).join(""):EMPTY_MAT;
-  byId("packBody").innerHTML=p.packaging.length?p.packaging.map(i=>packRow(i,t)).join(""):EMPTY_PACK;
-  byId("ovBody").innerHTML=p.overhead.length?p.overhead.map(i=>ovRow(i,t)).join(""):EMPTY_OV;
+  byId("matBody").innerHTML=p.materials.length?p.materials.map(matRow).join(""):EMPTY_MAT;
+  byId("packBody").innerHTML=p.packaging.length?p.packaging.map(packRow).join(""):EMPTY_PACK;
+  byId("ovBody").innerHTML=p.overhead.length?p.overhead.map(ovRow).join(""):EMPTY_OV;
 }
 
 /* ---------- recompute ---------- */
 function recompute(){
-  const t=at(), b=bizOf(t), p=active(), f=full(p,t);
-  p.materials.forEach(i=>{ const cell=document.querySelector(`[data-line="materials"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,t)); });
-  p.packaging.forEach(i=>{ const cell=document.querySelector(`[data-line="packaging"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,t)); });
-  p.overhead.forEach(i=>{ const cell=document.querySelector(`[data-line="overhead"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,t)); });
+  const t=at(), b=bizOf(t), p=active(), f=full(p);
+  p.materials.forEach(i=>{ const cell=document.querySelector(`[data-line="materials"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i)); });
+  p.packaging.forEach(i=>{ const cell=document.querySelector(`[data-line="packaging"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i)); });
+  p.overhead.forEach(i=>{ const cell=document.querySelector(`[data-line="overhead"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i)); });
 
   setText("matBatch",fmt(f.matBatch)); setText("matUnit",fmt(f.matUnit)); setText("packUnit",fmt(f.packUnit));
   setText("ovBatch",fmt(f.ohBatch)); setText("ovUnit",fmt(f.ohUnit));
@@ -747,7 +738,7 @@ function renderSummary(t,b){
   t=t||at(); b=b||bizOf(t);
   setText("suOh",fmt(b.ohTotal)); setText("suRev",fmt(b.sales)); setText("suCost",fmt(b.cost)); setText("suProfit",fmt(b.profit));
   byId("suProfitTile").classList.toggle("profit", b.profit>=0); byId("suProfitTile").classList.toggle("bad", b.profit<0);
-  const rows=t.products.map(p=>{ const f=full(p,t); const s=Math.max(0,numv(p.servings)); const lineProfit=f.profitUnit*s; const bad=f.profitUnit<0;
+  const rows=t.products.map(p=>{ const f=full(p); const s=Math.max(0,numv(p.servings)); const lineProfit=f.profitUnit*s; const bad=f.profitUnit<0;
     const tags=(p.available?"":' <span class="psku">· unavailable</span>')+((p.web&&p.web.show)?"":' <span class="psku">· hidden</span>');
     return `<tr data-open="${p.id}">
       <td>${esc(p.name)||"Untitled"} ${p.sku?`<span class="psku">${esc(p.sku)}</span>`:""}${tags}</td>
@@ -802,11 +793,12 @@ function onInput(e){
   if(id==="pMarkup"){ p.markup=el.value; renderProductBar(); recompute(); return; }
   if(id==="webUnavail"){ p.available=!el.checked; renderProductBar(); recompute(); return; }
   // library editor: category rename
-  const catname=el.dataset.catname, cnscope=el.dataset.libscope;
-  if(catname && cnscope){ const lib=(cnscope==="shared"?state.library:t.library); const c=lib.categories.find(x=>x.id===catname); if(c){ c.name=el.value; renderProductBar(); recompute(); } return; }
+  const catname=el.dataset.catname;
+  if(catname){ const c=state.library.categories.find(x=>x.id===catname); if(c){ c.name=el.value; renderProductBar(); recompute(); } return; }
+  if(el.dataset.catkind){ const c=state.library.categories.find(x=>x.id===el.dataset.catkind); if(c){ c.kind=el.value; renderProductRows(); recompute(); } return; }
   // library editor: item fields
-  const lscope=el.dataset.libscope, lcat=el.dataset.cat, lfield=el.dataset.field, lrid=el.dataset.id;
-  if(lscope&&lcat&&lfield&&lrid){ const lib=(lscope==="shared"?state.library:t.library); const c=lib.categories.find(x=>x.id===lcat); const it=c&&c.items.find(x=>x.id===lrid);
+  const lcat=el.dataset.cat, lfield=el.dataset.field, lrid=el.dataset.id;
+  if(lcat&&lfield&&lrid){ const c=state.library.categories.find(x=>x.id===lcat); const it=c&&c.items.find(x=>x.id===lrid);
     if(it){ it[lfield]=el.value; renderProductRows(); renderProductBar(); recompute(); } return; }
   // product line qty
   const sec=el.dataset.sec, field=el.dataset.field, rid=el.dataset.id;
@@ -823,19 +815,16 @@ function onClick(e){
   const btn=e.target.closest("button"); if(!btn) return;
   if(btn.id==="pickClose"){ closePicker(); return; }
   if(btn.dataset.tab){ switchTab(btn.dataset.tab); return; }
-  // library category add/remove
-  if(btn.dataset.catadd){ const lib=(btn.dataset.catadd==="shared"?state.library:at().library); lib.categories.push({id:uid(),name:"",items:[]}); renderLibrary(); return; }
-  if(btn.dataset.catremove){ const lib=(btn.dataset.catremove==="shared"?state.library:at().library); if(confirm("Delete this category and its items?")){ lib.categories=lib.categories.filter(c=>c.id!==btn.dataset.id); renderLibrary(); renderProductRows(); renderProductBar(); recompute(); } return; }
-  // library item add/remove
-  if(btn.dataset.libitemadd){ const lib=(btn.dataset.libitemadd==="shared"?state.library:at().library); const c=lib.categories.find(x=>x.id===btn.dataset.cat); if(c){ c.items.push({id:uid(),name:"",unit:"",unitCost:0}); renderLibrary(); const last=byId("libBody").querySelector('input[data-cat="'+c.id+'"]'); } return; }
-  if(btn.dataset.libitemremove){ const lib=(btn.dataset.libitemremove==="shared"?state.library:at().library); const c=lib.categories.find(x=>x.id===btn.dataset.cat); if(c){ c.items=c.items.filter(x=>x.id!==btn.dataset.id); renderLibrary(); renderProductRows(); renderProductBar(); recompute(); } return; }
-  // product line add (opens picker) / remove
+  if(btn.dataset.catadd){ state.library.categories.push({id:uid(),name:"",kind:"material",items:[]}); renderLibrary(); return; }
+  if(btn.dataset.catremove){ if(confirm("Delete this category and its items?")){ state.library.categories=state.library.categories.filter(c=>c.id!==btn.dataset.catremove); renderLibrary(); renderProductRows(); renderProductBar(); recompute(); } return; }
+  if(btn.dataset.libitemadd){ const c=state.library.categories.find(x=>x.id===btn.dataset.libitemadd); if(c){ c.items.push({id:uid(),name:"",unit:"",unitCost:0}); renderLibrary(); } return; }
+  if(btn.dataset.libitemremove){ const c=state.library.categories.find(x=>x.id===btn.dataset.libitemremove); if(c){ c.items=c.items.filter(x=>x.id!==btn.dataset.id); renderLibrary(); renderProductRows(); renderProductBar(); recompute(); } return; }
   if(btn.dataset.add){ openPicker(btn.dataset.add, null); return; }
   if(btn.dataset.remove){ const sec=btn.dataset.remove, rid=btn.dataset.id, p=active(); p[sec]=p[sec].filter(r=>r.id!==rid); renderProductRows(); recompute(); return; }
   if(btn.dataset.action){ handleAction(btn.dataset.action); return; }
 }
 function reassignIds(p){ p.id=uid(); ["materials","packaging","overhead"].forEach(k=> p[k].forEach(i=>i.id=uid())); return p; }
-function reassignType(t){ t.id=uid(); t.library=normLib(t.library); t.library.categories.forEach(c=>{ c.id=uid(); c.items.forEach(i=>i.id=uid()); }); t.products.forEach(reassignIds); t.activeId=t.products[0]?t.products[0].id:""; return t; }
+function reassignType(t){ t.id=uid(); t.products.forEach(reassignIds); t.activeId=t.products[0]?t.products[0].id:""; return t; }
 function handleAction(a){
   const t=at();
   if(a==="newType"){ const nt=emptyType("Type "+(state.types.length+1)); state.types.push(nt); switchType(nt.id); switchTab("library"); byId("typeName").focus(); byId("typeName").select(); }
@@ -912,16 +901,16 @@ function downloadCSV(){
   state.types.forEach(t=>{ const b=bizOf(t);
     row("================ MENU: "+(t.name||"Untitled")+" ================");
     row("Summary"); row("Product","Code","Ingredients+pack/serv","Overhead/serv","Total cost/serv","Markup %","Price","Profit/serv","Servings","Sales","Profit","Available","On site");
-    t.products.forEach(p=>{ const f=full(p,t); const s=Math.max(0,numv(p.servings)); row(p.name,p.sku,f.directUnit.toFixed(2),f.ohUnit.toFixed(2),f.total.toFixed(2),f.markup,f.price,f.profitUnit.toFixed(2),s,(f.price*s).toFixed(2),(f.profitUnit*s).toFixed(2),(p.available!==false?"yes":"no"),((p.web&&p.web.show)?"yes":"no")); });
+    t.products.forEach(p=>{ const f=full(p); const s=Math.max(0,numv(p.servings)); row(p.name,p.sku,f.directUnit.toFixed(2),f.ohUnit.toFixed(2),f.total.toFixed(2),f.markup,f.price,f.profitUnit.toFixed(2),s,(f.price*s).toFixed(2),(f.profitUnit*s).toFixed(2),(p.available!==false?"yes":"no"),((p.web&&p.web.show)?"yes":"no")); });
     row("Session totals","","","","","","",b.sales.toFixed(2),b.servs,b.sales.toFixed(2),b.profit.toFixed(2)); row("");
-    t.products.forEach(p=>{ const f=full(p,t);
+    t.products.forEach(p=>{ const f=full(p);
       row("Product: "+(p.name||"Untitled")); row("Servings this session",p.servings); row("Available",p.available!==false?"yes":"no");
       row("Raw materials (for this cook)"); row("Material","Qty","Unit","Unit cost","Line");
-      p.materials.forEach(i=>{ const inf=lineInfo(i,t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
+      p.materials.forEach(i=>{ const inf=lineInfo(i); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
       row("Packaging (per serving)"); row("Item","Qty","Unit","Cost each","Line");
-      p.packaging.forEach(i=>{ const inf=lineInfo(i,t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
+      p.packaging.forEach(i=>{ const inf=lineInfo(i); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
       row("Overhead (per batch)"); row("Item","Qty","Unit","Rate","Line");
-      p.overhead.forEach(i=>{ const inf=lineInfo(i,t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
+      p.overhead.forEach(i=>{ const inf=lineInfo(i); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
       row("Overhead / batch","","","",f.ohBatch.toFixed(2)); row("Total cost/serving","","","",f.total.toFixed(2)); row("Selling price","","","",f.price); row("");
     });
   });
@@ -936,10 +925,10 @@ function importJSON(file){ const r=new FileReader();
 
 /* ---------- print (active product) ---------- */
 function buildPrint(){
-  const t=at(), b=bizOf(t), p=active(), f=full(p,t), money=fmt;
-  const mat=p.materials.map(i=>{ const inf=lineInfo(i,t); return `<tr><td>${esc(inf.name)||"—"}</td><td class="pnum">${i.qty}</td><td>${esc(inf.unit)}</td><td class="pnum">${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
-  const pack=p.packaging.map(i=>{ const inf=lineInfo(i,t); return `<tr><td>${esc(inf.name)||"—"}</td><td class="pnum">${i.qty}</td><td class="pnum">${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
-  const ov=p.overhead.map(i=>{ const inf=lineInfo(i,t); return `<tr><td>${esc(inf.name)||"—"}${inf.unit?" ("+esc(inf.unit)+")":""}</td><td class="pnum">${i.qty} × ${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
+  const t=at(), b=bizOf(t), p=active(), f=full(p), money=fmt;
+  const mat=p.materials.map(i=>{ const inf=lineInfo(i); return `<tr><td>${esc(inf.name)||"—"}</td><td class="pnum">${i.qty}</td><td>${esc(inf.unit)}</td><td class="pnum">${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
+  const pack=p.packaging.map(i=>{ const inf=lineInfo(i); return `<tr><td>${esc(inf.name)||"—"}</td><td class="pnum">${i.qty}</td><td class="pnum">${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
+  const ov=p.overhead.map(i=>{ const inf=lineInfo(i); return `<tr><td>${esc(inf.name)||"—"}${inf.unit?" ("+esc(inf.unit)+")":""}</td><td class="pnum">${i.qty} × ${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
   byId("printArea").innerHTML=`
     ${state.company?`<div class="pcompany">${esc(state.company)} · ${esc(t.name)}</div>`:`<div class="pcompany">${esc(t.name)}</div>`}
     <h1>${esc(p.name)||"Product cost sheet"}${p.available?"":" (currently unavailable)"}</h1>
