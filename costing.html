@@ -79,6 +79,13 @@
   .btn.warn:hover{border-color:var(--danger);color:var(--danger)}
   body.biz-mode .prodbar, body.biz-mode .prod-toolbar{opacity:.5}
   body.biz-mode .prodbar:hover, body.biz-mode .prod-toolbar:hover{opacity:1}
+  .lib-grid{display:grid;grid-template-columns:1fr;gap:22px}
+  @media (min-width:820px){ .lib-grid{grid-template-columns:1fr 1fr 1fr} }
+  .lib-h{font-weight:600;font-size:13.5px;margin:0 0 8px}
+  select.sel{appearance:auto;background:var(--surface);cursor:pointer}
+  td.auto{color:var(--muted);font-variant-numeric:tabular-nums;font-size:13px}
+  .linkbtn{display:block;margin-top:4px;border:none;background:none;color:var(--accent);font-size:11.5px;cursor:pointer;padding:0;text-decoration:underline}
+  .miss{color:var(--danger);font-size:11px;margin-left:6px}
 
   main{padding:26px 0 40px}
   .panel{display:none} .panel.active{display:block}
@@ -240,6 +247,7 @@
 <div class="toolbar type-toolbar"><div class="wrap toolbar-inner">
   <nav class="tabs" role="tablist" aria-label="Type sections">
     <span class="navlabel">This type</span>
+    <button class="tab biz" role="tab" data-tab="library" aria-selected="false">Library</button>
     <button class="tab biz" role="tab" data-tab="summary" aria-selected="false">Summary</button>
   </nav>
   <div class="actions">
@@ -262,7 +270,7 @@
 <div class="toolbar prod-toolbar"><div class="wrap toolbar-inner">
   <nav class="tabs" role="tablist" aria-label="Product sections">
     <span class="navlabel">This product</span>
-    <button class="tab" role="tab" data-tab="materials" aria-selected="true">Materials</button>
+    <button class="tab" role="tab" data-tab="materials" aria-selected="true">Recipe</button>
     <button class="tab" role="tab" data-tab="pricing" aria-selected="false">Pricing</button>
   </nav>
   <div class="actions">
@@ -273,32 +281,32 @@
 
 <main class="wrap">
   <section class="panel" id="tab-materials">
-    <div class="panel-head"><h2>Materials</h2>
-      <p>Ingredients for what you cook this session, and how many servings (requests) it makes. Packaging is counted per serving.</p></div>
-    <div class="section-sub first">Ingredients <span>— for this cook</span></div>
+    <div class="panel-head"><h2>Recipe</h2>
+      <p>Pick raw materials, packaging and overhead from your Library and just enter quantities — costs fill in automatically. Choose “Custom” for a one-off. Manage the Library (and prices) from the Library tab.</p></div>
+    <div class="section-sub first">Raw materials <span>— for this cook</span></div>
     <table class="ledger"><thead><tr>
-      <th>Ingredient</th><th class="num">Qty</th><th>Unit</th><th class="num">Unit cost</th><th class="num">Line total</th><th></th>
+      <th>Material</th><th class="num">Qty</th><th>Unit</th><th class="num">Unit cost</th><th class="num">Line total</th><th></th>
     </tr></thead><tbody id="matBody"></tbody></table>
-    <div class="add-row"><button class="add-btn" data-add="materials">+ Add ingredient</button></div>
+    <div class="add-row"><button class="add-btn" data-add="materials">+ Add raw material</button></div>
     <div class="panel-foot">
       <div class="foot-note"><label for="pServings">Servings (requests) this session</label><input id="pServings" type="number" min="1" step="1" class="num"></div>
       <div class="subtotals">
-        <div class="srow"><span class="lab">Batch ingredient cost</span><span id="matBatch">—</span></div>
-        <div class="srow total"><span>Ingredient cost / serving</span><span id="matUnit">—</span></div>
+        <div class="srow"><span class="lab">Batch material cost</span><span id="matBatch">—</span></div>
+        <div class="srow total"><span>Material cost / serving</span><span id="matUnit">—</span></div>
       </div>
     </div>
     <div class="section-sub">Packaging <span>— per serving</span></div>
     <table class="ledger"><thead><tr>
-      <th>Packaging item</th><th class="num">Qty</th><th class="num">Cost each</th><th class="num">Line total</th><th></th>
+      <th>Packaging</th><th class="num">Qty</th><th>Unit</th><th class="num">Cost each</th><th class="num">Line total</th><th></th>
     </tr></thead><tbody id="packBody"></tbody></table>
     <div class="add-row"><button class="add-btn" data-add="packaging">+ Add packaging</button></div>
     <div class="panel-foot">
       <div class="foot-note"></div>
       <div class="subtotals"><div class="srow total"><span>Packaging / serving</span><span id="packUnit">—</span></div></div>
     </div>
-    <div class="section-sub">Overhead <span>— your estimate, per batch (gas, transport, talent, rent…)</span></div>
+    <div class="section-sub">Overhead <span>— quantity used per batch (e.g. 3 kWh); rate comes from the Library</span></div>
     <table class="ledger"><thead><tr>
-      <th>Overhead item</th><th class="num">Amount / batch</th><th></th>
+      <th>Overhead</th><th class="num">Qty / batch</th><th>Unit</th><th class="num">Rate</th><th class="num">Line total</th><th></th>
     </tr></thead><tbody id="ovBody"></tbody></table>
     <div class="add-row"><button class="add-btn" data-add="overhead">+ Add overhead</button></div>
     <div class="panel-foot">
@@ -339,6 +347,12 @@
       <div class="field" style="flex:1;min-width:260px"><label for="webDesc">Short description</label><input id="webDesc" placeholder="e.g. Slow-cooked pork monggo with rice"></div>
       <div class="field" style="flex:1;min-width:260px"><label for="webImg">Image URL (optional)</label><input id="webImg" placeholder="https://…"></div>
     </div>
+  </section>
+
+  <section class="panel" id="tab-library">
+    <div class="panel-head"><h2>Library</h2>
+      <p>Define each raw material, overhead rate and packaging item once, with its cost. Products pick from here and you just enter quantities. Change a cost here and every product using it updates — perfect for price changes and inflation. <strong>Shared</strong> items are available to every business type; <strong>this type</strong> items are only for the current one.</p></div>
+    <div id="libBody"></div>
   </section>
 
   <section class="panel" id="tab-summary">
@@ -409,47 +423,70 @@
 "use strict";
 const uid = () => Math.random().toString(36).slice(2, 9);
 
+function emptyLib(){ return { materials:[], overhead:[], packaging:[] }; }
 function emptyProduct(name){
   return { id:uid(), name:name||"New product", sku:"", servings:5, markup:60, available:true, price:0,
-    materials:[{id:uid(),name:"",qty:0,unit:"g",unitCost:0}],
-    packaging:[{id:uid(),name:"",qty:1,unitCost:0}],
-    overhead:[{id:uid(),name:"",amount:0}],
+    materials:[{id:uid(),ref:"",name:"",qty:0,unit:"",unitCost:0}],
+    packaging:[{id:uid(),ref:"",name:"",qty:1,unit:"each",unitCost:0}],
+    overhead:[{id:uid(),ref:"",name:"",qty:1,unit:"",unitCost:0}],
     web:{show:true,desc:"",img:""} };
 }
 function emptyType(name){
   const p=emptyProduct("Product A");
-  return { id:uid(), name:name||"New type", products:[p], activeId:p.id };
+  return { id:uid(), name:name||"New type", library:emptyLib(), products:[p], activeId:p.id };
 }
 function sampleState(){
-  return { company:"Barluado's Kitchen", currency:"PHP", tagline:"Home-cooked lunch, made to order", orderLink:{label:"Order on Messenger",url:"https://m.me/syntax.premiero"}, activeTypeId:"t1", types:[
-    { id:"t1", name:"Lunch menu", activeId:"p1",
+  const L={
+    materials:[{id:"m_rice",name:"Rice",unit:"kg",unitCost:55}],
+    overhead:[{id:"o_elec",name:"Electricity",unit:"kWh",unitCost:16},{id:"o_lpg",name:"LPG gas",unit:"kg",unitCost:90},{id:"o_trans",name:"Transport",unit:"trip",unitCost:150}],
+    packaging:[{id:"pk_cont",name:"Container + lid",unit:"each",unitCost:8},{id:"pk_utseil",name:"Utensil + napkin",unit:"each",unitCost:2},{id:"pk_small",name:"Small container",unit:"each",unitCost:3}]
+  };
+  const TL={
+    materials:[{id:"m_mong",name:"Monggo beans",unit:"kg",unitCost:120},{id:"m_pork",name:"Pork",unit:"kg",unitCost:300},{id:"m_veg",name:"Veg & aromatics",unit:"set",unitCost:70},{id:"m_pasta",name:"Pasta",unit:"kg",unitCost:90},{id:"m_cream",name:"Cream & cheese",unit:"set",unitCost:180},{id:"m_bacon",name:"Bacon",unit:"kg",unitCost:350}],
+    overhead:[], packaging:[]
+  };
+  const line=(ref,qty)=>({id:uid(),ref,qty,name:"",unit:"",unitCost:0});
+  return { company:"Barluado's Kitchen", currency:"PHP", tagline:"Home-cooked lunch, made to order", orderLink:{label:"Order on Messenger",url:"https://m.me/syntax.premiero"},
+    library:L, activeTypeId:"t1", types:[
+    { id:"t1", name:"Lunch menu", library:TL, activeId:"p1",
       products:[
         { id:"p1", name:"Monggo", sku:"MNG-01", servings:5, markup:40, available:true,
-          materials:[{id:uid(),name:"Monggo beans",qty:0.5,unit:"kg",unitCost:120},{id:uid(),name:"Pork",qty:0.3,unit:"kg",unitCost:300},{id:uid(),name:"Veg & aromatics",qty:1,unit:"set",unitCost:70}],
-          packaging:[{id:uid(),name:"Container + lid",qty:1,unitCost:8},{id:uid(),name:"Spoon + napkin",qty:1,unitCost:2}],
-          overhead:[{id:uid(),name:"Talent fee",amount:100},{id:uid(),name:"Gas (LPG)",amount:40},{id:uid(),name:"Transport",amount:75}] },
+          materials:[line("m_mong",0.5),line("m_pork",0.3),line("m_veg",1),line("m_rice",1.5)],
+          packaging:[line("pk_cont",1),line("pk_utseil",1)],
+          overhead:[line("o_elec",2),line("o_lpg",0.5),line("o_trans",1)] },
         { id:"p2", name:"Pasta Carbonara", sku:"CAR-01", servings:5, markup:40, available:true,
-          materials:[{id:uid(),name:"Pasta",qty:0.5,unit:"kg",unitCost:90},{id:uid(),name:"Cream & cheese",qty:1,unit:"set",unitCost:180},{id:uid(),name:"Bacon",qty:0.2,unit:"kg",unitCost:350}],
-          packaging:[{id:uid(),name:"Container + lid",qty:1,unitCost:8},{id:uid(),name:"Fork + napkin",qty:1,unitCost:2}],
-          overhead:[{id:uid(),name:"Talent fee",amount:120},{id:uid(),name:"Gas (LPG)",amount:50},{id:uid(),name:"Transport",amount:75}] },
-        { id:"p3", name:"Extra plain rice", sku:"RICE-01", servings:5, markup:40, available:true,
-          materials:[{id:uid(),name:"Rice",qty:0.4,unit:"kg",unitCost:55}],
-          packaging:[{id:uid(),name:"Small container",qty:1,unitCost:3}],
-          overhead:[{id:uid(),name:"Talent fee",amount:10},{id:uid(),name:"Gas (LPG)",amount:10}] }
+          materials:[line("m_pasta",0.5),line("m_cream",1),line("m_bacon",0.2)],
+          packaging:[line("pk_cont",1),line("pk_utseil",1)],
+          overhead:[line("o_elec",2),line("o_lpg",0.4),line("o_trans",1)] },
+        { id:"p3", name:"Extra plain rice", sku:"RICE-01", servings:5, markup:40, available:false,
+          materials:[line("m_rice",0.4)],
+          packaging:[line("pk_small",1)],
+          overhead:[line("o_elec",0.5),line("o_lpg",0.1)] }
       ]}
   ]};
 }
-function normProduct(p){ p.id=p.id||uid(); p.materials=p.materials||p.ingredients||[]; p.materials.forEach(i=> i.id=i.id||uid());
-  p.packaging=p.packaging||[]; p.packaging.forEach(i=> i.id=i.id||uid());
-  p.overhead=Array.isArray(p.overhead)?p.overhead:[{id:uid(),name:"",amount:0}]; p.overhead.forEach(d=> d.id=d.id||uid());
+function normLib(l){ l=l||emptyLib(); ["materials","overhead","packaging"].forEach(k=>{ l[k]=Array.isArray(l[k])?l[k]:[]; l[k].forEach(i=>{ i.id=i.id||uid(); if(i.unit==null) i.unit=(k==="packaging"?"each":""); if(i.unitCost==null) i.unitCost=0; }); }); return l; }
+function normLine(i,kind){ i.id=i.id||uid();
+  if(i.ref==null){ // migrate old plain rows into custom lines
+    i.ref="";
+    if(kind==="overhead" && i.amount!=null){ i.qty=1; i.unitCost=numv(i.amount); i.unit=i.unit||""; }
+  }
+  if(i.qty==null) i.qty=(kind==="packaging"?1:0);
+  if(i.name==null) i.name=""; if(i.unit==null) i.unit=(kind==="packaging"?"each":""); if(i.unitCost==null) i.unitCost=0;
+  return i; }
+function normProduct(p){ p.id=p.id||uid();
+  p.materials=(p.materials||p.ingredients||[]).map(i=>normLine(i,"materials"));
+  p.packaging=(p.packaging||[]).map(i=>normLine(i,"packaging"));
+  p.overhead=(p.overhead||[]).map(i=>normLine(i,"overhead"));
   if(p.servings==null) p.servings=(p.expectedUnits!=null?p.expectedUnits:(p.yield!=null?p.yield:(p.quantity!=null?p.quantity:5)));
   if(p.available==null) p.available=true;
   if(p.price==null) p.price=0; if(p.markup==null) p.markup=60; p.web=p.web||{show:true,desc:"",img:""}; return p; }
-function normType(t){ t.id=t.id||uid(); t.name=t.name||"Type";
+function normType(t){ t.id=t.id||uid(); t.name=t.name||"Type"; t.library=normLib(t.library);
   t.products=Array.isArray(t.products)&&t.products.length?t.products:[emptyProduct("Product A")]; t.products.forEach(normProduct);
   if(!t.products.find(p=>p.id===t.activeId)) t.activeId=t.products[0].id; return t; }
 function normalise(s){
   s.company=s.company||""; s.currency=s.currency||"PHP"; s.tagline=s.tagline||""; s.orderLink=s.orderLink||{label:"",url:""};
+  s.library=normLib(s.library);
   if(!Array.isArray(s.types)){
     if(Array.isArray(s.products)){ s.types=[normType({name:s.company||"Type 1",products:s.products})]; }
     else if(s.meta&&Array.isArray(s.materials)){ s.types=[normType({name:"Type 1",products:[{name:s.meta.name,sku:s.meta.sku,servings:s.meta.quantity,materials:s.materials}]})]; }
@@ -487,20 +524,28 @@ function showSaved(){ const el=byId("saveStatus"); if(!el) return; el.textConten
 let toastTimer=null;
 function toast(m){ const el=byId("toast"); if(!el) return; el.textContent=m; el.style.opacity="1"; el.style.transform="translateX(-50%) translateY(0)"; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.style.opacity="0"; el.style.transform="translateX(-50%) translateY(20px)"; },3400); }
 
+/* ---------- library resolution ---------- */
+function libList(kind,t){ return (t&&t.library&&t.library[kind]||[]).concat(state.library[kind]||[]); }
+function resolveItem(kind,ref,t){ if(!ref) return null; return libList(kind,t).find(x=>x.id===ref)||null; }
+function lineInfo(line,kind,t){ if(line.ref){ const it=resolveItem(kind,line.ref,t); return it?{name:it.name,unit:it.unit,unitCost:numv(it.unitCost),missing:false}:{name:"(removed item)",unit:"",unitCost:0,missing:true}; } return {name:line.name,unit:line.unit,unitCost:numv(line.unitCost),missing:false}; }
+function lineCost(line,kind,t){ const inf=lineInfo(line,kind,t); return numv(line.qty)*numv(inf.unitCost); }
+
 /* ---------- calculations ---------- */
-function directOf(p){
-  const matBatch=p.materials.reduce((s,i)=> s+numv(i.qty)*numv(i.unitCost),0);
+function directOf(p,t){
+  t=t||at();
+  const matBatch=p.materials.reduce((s,i)=> s+lineCost(i,"materials",t),0);
   const servings=Math.max(0,numv(p.servings));
   const matUnit=servings>0?matBatch/servings:0;
-  const packUnit=p.packaging.reduce((s,i)=> s+numv(i.qty)*numv(i.unitCost),0);
+  const packUnit=p.packaging.reduce((s,i)=> s+lineCost(i,"packaging",t),0);
   const directUnit=matUnit+packUnit;
-  const ohBatch=p.overhead.reduce((s,d)=> s+numv(d.amount),0);
+  const ohBatch=p.overhead.reduce((s,i)=> s+lineCost(i,"overhead",t),0);
   const ohUnit=servings>0?ohBatch/servings:0;
   return {matBatch,servings,matUnit,packUnit,directUnit,ohBatch,ohUnit};
 }
 function roundPrice(x){ return Math.round(x); }
 function full(p,t){
-  const d=directOf(p);
+  t=t||at();
+  const d=directOf(p,t);
   const total=d.directUnit+d.ohUnit;
   const markup=Math.max(0,numv(p.markup));
   const price=roundPrice(total*(1+markup/100));
@@ -514,24 +559,63 @@ function bizOf(t){
   return {cost,sales,profit,servs,ohTotal};
 }
 
-/* ---------- row builders ---------- */
-const matRow = i => `<tr data-id="${i.id}">
-  <td><input class="cell-input" data-sec="materials" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="e.g. Rice"></td>
-  <td class="num qty-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="materials" data-field="qty" data-id="${i.id}" value="${i.qty}"></td>
-  <td class="unit-cell"><input class="cell-input" list="units" data-sec="materials" data-field="unit" data-id="${i.id}" value="${esc(i.unit)}" placeholder="unit"></td>
-  <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="materials" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>
-  <td class="num line" data-line="materials" data-id="${i.id}">—</td>
-  <td class="rm"><button class="rm-btn" data-remove="materials" data-id="${i.id}" aria-label="Remove">×</button></td></tr>`;
-const packRow = i => `<tr data-id="${i.id}">
-  <td><input class="cell-input" data-sec="packaging" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="e.g. Box + lid"></td>
-  <td class="num qty-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="packaging" data-field="qty" data-id="${i.id}" value="${i.qty}"></td>
-  <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="packaging" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>
-  <td class="num line" data-line="packaging" data-id="${i.id}">—</td>
-  <td class="rm"><button class="rm-btn" data-remove="packaging" data-id="${i.id}" aria-label="Remove">×</button></td></tr>`;
-const ovRow = d => `<tr data-id="${d.id}">
-  <td><input class="cell-input" data-sec="overhead" data-field="name" data-id="${d.id}" value="${esc(d.name)}" placeholder="e.g. Electricity"></td>
-  <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="overhead" data-field="amount" data-id="${d.id}" value="${d.amount}"></td>
-  <td class="rm"><button class="rm-btn" data-remove="overhead" data-id="${d.id}" aria-label="Remove">×</button></td></tr>`;
+/* ---------- row builders (library-linked) ---------- */
+function libOptions(kind,t,ref){
+  const tItems=(t&&t.library&&t.library[kind])||[], sItems=state.library[kind]||[];
+  const opt=i=>`<option value="${i.id}" ${i.id===ref?"selected":""}>${esc(i.name)||"(unnamed)"}${i.unit?" · "+esc(i.unit):""} · ${fmt(numv(i.unitCost))}</option>`;
+  let h=`<option value="" ${!ref?"selected":""} disabled>Choose…</option>`;
+  if(tItems.length) h+=`<optgroup label="This type">`+tItems.map(opt).join("")+`</optgroup>`;
+  if(sItems.length) h+=`<optgroup label="Shared">`+sItems.map(opt).join("")+`</optgroup>`;
+  h+=`<option value="__custom__">＋ Custom (one-off)…</option>`;
+  return h;
+}
+function lineRow(kind,i,t,cols){
+  const isCustom=!i.ref;
+  const inf=lineInfo(i,kind,t);
+  const nameCell = isCustom
+    ? `<td><input class="cell-input" data-sec="${kind}" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="Custom name"><button class="linkbtn" data-tolib="${kind}" data-id="${i.id}">use library</button></td>`
+    : `<td><select class="cell-input sel" data-sec="${kind}" data-field="ref" data-id="${i.id}">${libOptions(kind,t,i.ref)}</select>${inf.missing?'<span class="miss">removed</span>':''}</td>`;
+  const qtyCell = `<td class="num qty-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="${kind}" data-field="qty" data-id="${i.id}" value="${i.qty}"></td>`;
+  const unitCell = isCustom
+    ? `<td class="unit-cell"><input class="cell-input" data-sec="${kind}" data-field="unit" data-id="${i.id}" value="${esc(i.unit)}" placeholder="unit"></td>`
+    : `<td class="unit-cell auto">${esc(inf.unit)||"—"}</td>`;
+  const costCell = isCustom
+    ? `<td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="${kind}" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>`
+    : `<td class="num cost-cell auto">${fmt(inf.unitCost)}</td>`;
+  const lineCell = `<td class="num line" data-line="${kind}" data-id="${i.id}">—</td>`;
+  const rm = `<td class="rm"><button class="rm-btn" data-remove="${kind}" data-id="${i.id}" aria-label="Remove">×</button></td>`;
+  return `<tr data-id="${i.id}">${nameCell}${qtyCell}${cols==="noUnit"?"":unitCell}${costCell}${lineCell}${rm}</tr>`;
+}
+const matRow = (i,t)=> lineRow("materials",i,t||at(),"unit");
+const packRow = (i,t)=> lineRow("packaging",i,t||at(),"unit");
+const ovRow = (i,t)=> lineRow("overhead",i,t||at(),"unit");
+
+/* ---------- library editor rows ---------- */
+function libRow(scope,kind,i){
+  return `<tr data-id="${i.id}">
+    <td><input class="cell-input" data-libscope="${scope}" data-libkind="${kind}" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="e.g. ${kind==="overhead"?"Electricity":kind==="packaging"?"Container":"Rice"}"></td>
+    <td class="unit-cell"><input class="cell-input" data-libscope="${scope}" data-libkind="${kind}" data-field="unit" data-id="${i.id}" value="${esc(i.unit)}" placeholder="${kind==="overhead"?"kWh":"unit"}"></td>
+    <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-libscope="${scope}" data-libkind="${kind}" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>
+    <td class="rm"><button class="rm-btn" data-libremove="${scope}" data-libkind="${kind}" data-id="${i.id}" aria-label="Remove">×</button></td></tr>`;
+}
+function libTable(scope,kind,items){
+  const rows=items.length?items.map(i=>libRow(scope,kind,i)).join(""):`<tr><td colspan="4" class="empty">None yet.</td></tr>`;
+  return `<table class="ledger"><thead><tr><th>Name</th><th>Unit</th><th class="num">Cost / unit</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="add-row"><button class="add-btn" data-libadd="${scope}" data-libkind="${kind}">+ Add</button></div>`;
+}
+function renderLibrary(){
+  const t=at();
+  const sec=(title,scope,lib)=>`<div class="section-sub first" style="margin-top:22px">${title}</div>
+    <div class="lib-grid">
+      <div><div class="lib-h">Raw materials</div>${libTable(scope,"materials",lib.materials)}</div>
+      <div><div class="lib-h">Overhead rates</div>${libTable(scope,"overhead",lib.overhead)}</div>
+      <div><div class="lib-h">Packaging</div>${libTable(scope,"packaging",lib.packaging)}</div>
+    </div>`;
+  byId("libBody").innerHTML =
+    sec("Shared — all business types","shared",state.library) +
+    sec(esc(t.name)+" — this type only","type",t.library);
+}
+
 
 /* ---------- bars ---------- */
 function renderTypeBar(){
@@ -564,18 +648,25 @@ function render(){
   byId("pMarkup").value=p.markup;
   byId("webShow").checked=!!(p.web&&p.web.show); byId("webUnavail").checked=!p.available; byId("webDesc").value=(p.web&&p.web.desc)||""; byId("webImg").value=(p.web&&p.web.img)||"";
   byId("tagline").value=state.tagline||""; byId("orderLabel").value=state.orderLink.label||""; byId("orderUrl").value=state.orderLink.url||"";
-  byId("matBody").innerHTML=p.materials.length?p.materials.map(matRow).join(""):`<tr><td colspan="6" class="empty">No ingredients yet — add one below.</td></tr>`;
-  byId("packBody").innerHTML=p.packaging.length?p.packaging.map(packRow).join(""):`<tr><td colspan="5" class="empty">No packaging yet — add one below.</td></tr>`;
-  byId("ovBody").innerHTML=p.overhead.length?p.overhead.map(ovRow).join(""):`<tr><td colspan="3" class="empty">No overhead yet — add one below.</td></tr>`;
+  renderProductRows(); renderLibrary();
   byId("suHead").textContent = (t.name||"Type")+" summary";
   renderTypeBar(); renderProductBar(); recompute();
+}
+const EMPTY_MAT=`<tr><td colspan="6" class="empty">No raw materials yet — add one below.</td></tr>`;
+const EMPTY_PACK=`<tr><td colspan="6" class="empty">No packaging yet — add one below.</td></tr>`;
+const EMPTY_OV=`<tr><td colspan="6" class="empty">No overhead yet — add one below.</td></tr>`;
+function renderProductRows(){ const t=at(), p=active();
+  byId("matBody").innerHTML=p.materials.length?p.materials.map(i=>matRow(i,t)).join(""):EMPTY_MAT;
+  byId("packBody").innerHTML=p.packaging.length?p.packaging.map(i=>packRow(i,t)).join(""):EMPTY_PACK;
+  byId("ovBody").innerHTML=p.overhead.length?p.overhead.map(i=>ovRow(i,t)).join(""):EMPTY_OV;
 }
 
 /* ---------- recompute ---------- */
 function recompute(){
   const t=at(), b=bizOf(t), p=active(), f=full(p,t);
-  p.materials.forEach(i=>{ const cell=document.querySelector(`[data-line="materials"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(numv(i.qty)*numv(i.unitCost)); });
-  p.packaging.forEach(i=>{ const cell=document.querySelector(`[data-line="packaging"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(numv(i.qty)*numv(i.unitCost)); });
+  p.materials.forEach(i=>{ const cell=document.querySelector(`[data-line="materials"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,"materials",t)); });
+  p.packaging.forEach(i=>{ const cell=document.querySelector(`[data-line="packaging"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,"packaging",t)); });
+  p.overhead.forEach(i=>{ const cell=document.querySelector(`[data-line="overhead"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,"overhead",t)); });
 
   setText("matBatch",fmt(f.matBatch)); setText("matUnit",fmt(f.matUnit)); setText("packUnit",fmt(f.packUnit));
   setText("ovBatch",fmt(f.ohBatch)); setText("ovUnit",fmt(f.ohUnit));
@@ -637,8 +728,8 @@ function renderSummary(t,b){
 function switchTab(name){ currentTab=name;
   document.querySelectorAll(".tab").forEach(b=> b.setAttribute("aria-selected",b.dataset.tab===name));
   document.querySelectorAll(".panel").forEach(p=> p.classList.toggle("active",p.id==="tab-"+name));
-  document.body.classList.toggle("biz-mode", name==="summary");
-  if(name==="summary") renderSummary(); }
+  document.body.classList.toggle("biz-mode", name==="summary"||name==="library");
+  if(name==="summary") renderSummary(); if(name==="library") renderLibrary(); }
 function switchType(id){ if(!state.types.find(t=>t.id===id)) return; state.activeTypeId=id; render();
   document.querySelectorAll(".type-chip").forEach(c=> c.setAttribute("aria-current",c.dataset.switchtype===id)); }
 function switchProduct(id){ const t=at(); if(!t.products.find(p=>p.id===id)) return; t.activeId=id; render();
@@ -658,40 +749,60 @@ function onInput(e){
   if(id==="ghBranch"){ ghCfg.branch=el.value; saveGh(); return; }
   if(id==="ghToken"){ ghCfg.token=el.value; saveGh(); return; }
   if(id==="typeName"){ t.name=el.value; const c=document.querySelector(`.type-chip[data-switchtype="${t.id}"] span:first-child`); if(c) c.textContent=el.value||"Untitled"; byId("suHead").textContent=(el.value||"Type")+" summary"; persist(); return; }
-  if(id==="pCur"){ state.currency=el.value; renderTypeBar(); renderProductBar(); recompute(); return; }
+  if(id==="pCur"){ state.currency=el.value; render(); return; }
   if(id==="pName"){ p.name=el.value; recompute(); return; }
   if(id==="pSku"){ p.sku=el.value; if(currentTab==="summary") renderSummary(); persist(); return; }
   if(id==="pServings"){ p.servings=el.value; renderProductBar(); recompute(); return; }
   if(id==="pMarkup"){ p.markup=el.value; renderProductBar(); recompute(); return; }
   if(id==="webUnavail"){ p.available=!el.checked; renderProductBar(); recompute(); return; }
+  // library editor fields
+  const lscope=el.dataset.libscope, lkind=el.dataset.libkind, lfield=el.dataset.field, lrid=el.dataset.id;
+  if(lscope&&lkind&&lfield&&lrid){ const lib=(lscope==="shared"?state.library:t.library)[lkind]; const it=lib.find(x=>x.id===lrid);
+    if(it){ it[lfield]=el.value; renderProductRows(); renderProductBar(); recompute(); } return; }
+  // product line fields
   const sec=el.dataset.sec, field=el.dataset.field, rid=el.dataset.id;
-  if(sec&&field&&rid){ const arr = sec==="overhead"?p.overhead:p[sec]; const row=arr.find(r=>r.id===rid);
-    if(row){ row[field]=el.value; renderProductBar(); recompute(); } }
+  if(sec&&field&&rid){ const arr=p[sec]; const row=arr.find(r=>r.id===rid);
+    if(row){
+      if(field==="ref"){
+        if(el.value==="__custom__"){ row.custom=true; row.ref=""; }
+        else { row.ref=el.value; row.custom=false; }
+        renderProductRows(); renderProductBar(); recompute(); return;
+      }
+      row[field]=el.value; renderProductBar(); recompute();
+    } }
 }
 function onClick(e){
   if(e.target.id==="pubModal"){ byId("pubModal").style.display="none"; return; }
+  const tolib=e.target.closest("[data-tolib]"); if(tolib){ const p=active(); const arr=p[tolib.dataset.tolib]; const row=arr.find(r=>r.id===tolib.dataset.id); if(row){ row.custom=false; row.ref=""; renderProductRows(); recompute(); } return; }
   const st=e.target.closest(".type-chip"); if(st){ switchType(st.dataset.switchtype); return; }
-  const sw=e.target.closest(".prod-chip"); if(sw){ switchProduct(sw.dataset.switch); if(currentTab==="summary") switchTab("materials"); return; }
+  const sw=e.target.closest(".prod-chip"); if(sw){ switchProduct(sw.dataset.switch); if(currentTab==="summary"||currentTab==="library") switchTab("materials"); return; }
   const openRow=e.target.closest("tr[data-open]"); if(openRow){ switchProduct(openRow.dataset.open); switchTab("materials"); return; }
   const btn=e.target.closest("button"); if(!btn) return;
   if(btn.dataset.tab){ switchTab(btn.dataset.tab); return; }
-  if(btn.dataset.add){ const sec=btn.dataset.add, t=at(), p=active();
-    if(sec==="materials"){ p.materials.push({id:uid(),name:"",qty:0,unit:"g",unitCost:0}); byId("matBody").innerHTML=p.materials.map(matRow).join(""); }
-    if(sec==="packaging"){ p.packaging.push({id:uid(),name:"",qty:1,unitCost:0}); byId("packBody").innerHTML=p.packaging.map(packRow).join(""); }
-    if(sec==="overhead"){ p.overhead.push({id:uid(),name:"",amount:0}); byId("ovBody").innerHTML=p.overhead.map(ovRow).join(""); }
-    recompute();
+  // library add / remove
+  if(btn.dataset.libadd){ const scope=btn.dataset.libadd, kind=btn.dataset.libkind, lib=(scope==="shared"?state.library:at().library);
+    lib[kind].push({id:uid(),name:"",unit:(kind==="packaging"?"each":""),unitCost:0}); renderLibrary(); renderProductRows(); renderProductBar(); recompute();
+    return; }
+  if(btn.dataset.libremove){ const scope=btn.dataset.libremove, kind=btn.dataset.libkind, lib=(scope==="shared"?state.library:at().library);
+    lib[kind]=lib[kind].filter(x=>x.id!==btn.dataset.id); renderLibrary(); renderProductRows(); renderProductBar(); recompute(); return; }
+  // product line add / remove
+  if(btn.dataset.add){ const sec=btn.dataset.add, p=active();
+    if(sec==="materials"){ p.materials.push({id:uid(),ref:"",custom:false,qty:0,name:"",unit:"",unitCost:0}); }
+    if(sec==="packaging"){ p.packaging.push({id:uid(),ref:"",custom:false,qty:1,name:"",unit:"each",unitCost:0}); }
+    if(sec==="overhead"){ p.overhead.push({id:uid(),ref:"",custom:false,qty:1,name:"",unit:"",unitCost:0}); }
+    renderProductRows(); recompute();
     const body=sec==="materials"?"matBody":sec==="packaging"?"packBody":"ovBody";
-    const last=byId(body).querySelector("tr:last-child input"); if(last) last.focus(); return; }
-  if(btn.dataset.remove){ const sec=btn.dataset.remove, rid=btn.dataset.id, t=at(), p=active();
-    if(sec==="overhead") p.overhead=p.overhead.filter(r=>r.id!==rid); else p[sec]=p[sec].filter(r=>r.id!==rid);
-    render(); switchTab(currentTab); return; }
+    const last=byId(body).querySelector("tr:last-child select,tr:last-child input"); if(last) last.focus(); return; }
+  if(btn.dataset.remove){ const sec=btn.dataset.remove, rid=btn.dataset.id, p=active();
+    p[sec]=p[sec].filter(r=>r.id!==rid);
+    renderProductRows(); recompute(); return; }
   if(btn.dataset.action){ handleAction(btn.dataset.action); return; }
 }
-function reassignIds(p){ p.id=uid(); p.materials.forEach(i=>i.id=uid()); p.packaging.forEach(i=>i.id=uid()); return p; }
-function reassignType(t){ t.id=uid(); (t.sessionCosts||[]).forEach(d=>d.id=uid()); t.products.forEach(reassignIds); t.activeId=t.products[0]?t.products[0].id:""; return t; }
+function reassignIds(p){ p.id=uid(); p.materials.forEach(i=>i.id=uid()); p.packaging.forEach(i=>i.id=uid()); p.overhead.forEach(i=>i.id=uid()); return p; }
+function reassignType(t){ t.id=uid(); t.library=normLib(t.library); ["materials","overhead","packaging"].forEach(k=> t.library[k].forEach(i=>i.id=uid())); t.products.forEach(reassignIds); t.activeId=t.products[0]?t.products[0].id:""; return t; }
 function handleAction(a){
   const t=at();
-  if(a==="newType"){ const nt=emptyType("Type "+(state.types.length+1)); state.types.push(nt); switchType(nt.id); switchTab("overhead"); byId("typeName").focus(); byId("typeName").select(); }
+  if(a==="newType"){ const nt=emptyType("Type "+(state.types.length+1)); state.types.push(nt); switchType(nt.id); switchTab("library"); byId("typeName").focus(); byId("typeName").select(); }
   else if(a==="duplicateType"){ const copy=reassignType(JSON.parse(JSON.stringify(t))); copy.name=(t.name||"Untitled")+" (copy)"; const idx=state.types.findIndex(x=>x.id===state.activeTypeId); state.types.splice(idx+1,0,copy); switchType(copy.id); }
   else if(a==="deleteType"){ if(state.types.length<=1){ alert("You need at least one business type."); return; } if(confirm(`Delete the “${t.name||"Untitled"}” type and all its products?`)){ const idx=state.types.findIndex(x=>x.id===state.activeTypeId); state.types.splice(idx,1); state.activeTypeId=state.types[Math.max(0,idx-1)].id; render(); switchTab(currentTab); } }
   else if(a==="newProduct"){ const np=emptyProduct("Product "+String.fromCharCode(65+t.products.length)); t.products.push(np); switchProduct(np.id); switchTab("materials"); byId("pName").focus(); byId("pName").select(); }
@@ -769,13 +880,13 @@ function downloadCSV(){
     row("Session totals","","","","","","",b.sales.toFixed(2),b.servs,b.sales.toFixed(2),b.profit.toFixed(2)); row("");
     t.products.forEach(p=>{ const f=full(p,t);
       row("Product: "+(p.name||"Untitled")); row("Servings this session",p.servings); row("Available",p.available!==false?"yes":"no");
-      row("Ingredients (for this cook)"); row("Ingredient","Qty","Unit","Unit cost","Line");
-      p.materials.forEach(i=> row(i.name,i.qty,i.unit,i.unitCost,(numv(i.qty)*numv(i.unitCost)).toFixed(2)));
-      row("Packaging (per serving)"); row("Item","Qty","Cost each","Line");
-      p.packaging.forEach(i=> row(i.name,i.qty,i.unitCost,(numv(i.qty)*numv(i.unitCost)).toFixed(2)));
-      row("Overhead (per batch)"); row("Item","Amount");
-      p.overhead.forEach(i=> row(i.name,i.amount));
-      row("Overhead / batch","",f.ohBatch.toFixed(2)); row("Total cost/serving","",f.total.toFixed(2)); row("Selling price",f.price); row("");
+      row("Raw materials (for this cook)"); row("Material","Qty","Unit","Unit cost","Line");
+      p.materials.forEach(i=>{ const inf=lineInfo(i,"materials",t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
+      row("Packaging (per serving)"); row("Item","Qty","Unit","Cost each","Line");
+      p.packaging.forEach(i=>{ const inf=lineInfo(i,"packaging",t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
+      row("Overhead (per batch)"); row("Item","Qty","Unit","Rate","Line");
+      p.overhead.forEach(i=>{ const inf=lineInfo(i,"overhead",t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
+      row("Overhead / batch","","","",f.ohBatch.toFixed(2)); row("Total cost/serving","","","",f.total.toFixed(2)); row("Selling price","","","",f.price); row("");
     });
   });
   download(slug(state.company)+"-costing.csv", L.join("\n"), "text/csv");
@@ -790,23 +901,23 @@ function importJSON(file){ const r=new FileReader();
 /* ---------- print (active product) ---------- */
 function buildPrint(){
   const t=at(), b=bizOf(t), p=active(), f=full(p,t), money=fmt;
-  const mat=p.materials.map(i=>`<tr><td>${esc(i.name)||"—"}</td><td class="pnum">${i.qty}</td><td>${esc(i.unit)}</td><td class="pnum">${money(numv(i.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(i.unitCost))}</td></tr>`).join("");
-  const pack=p.packaging.map(i=>`<tr><td>${esc(i.name)||"—"}</td><td class="pnum">${i.qty}</td><td class="pnum">${money(numv(i.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(i.unitCost))}</td></tr>`).join("");
-  const ov=p.overhead.map(i=>`<tr><td>${esc(i.name)||"—"}</td><td class="pnum">${money(numv(i.amount))}</td></tr>`).join("");
+  const mat=p.materials.map(i=>{ const inf=lineInfo(i,"materials",t); return `<tr><td>${esc(inf.name)||"—"}</td><td class="pnum">${i.qty}</td><td>${esc(inf.unit)}</td><td class="pnum">${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
+  const pack=p.packaging.map(i=>{ const inf=lineInfo(i,"packaging",t); return `<tr><td>${esc(inf.name)||"—"}</td><td class="pnum">${i.qty}</td><td class="pnum">${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
+  const ov=p.overhead.map(i=>{ const inf=lineInfo(i,"overhead",t); return `<tr><td>${esc(inf.name)||"—"}${inf.unit?" ("+esc(inf.unit)+")":""}</td><td class="pnum">${i.qty} × ${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
   byId("printArea").innerHTML=`
     ${state.company?`<div class="pcompany">${esc(state.company)} · ${esc(t.name)}</div>`:`<div class="pcompany">${esc(t.name)}</div>`}
     <h1>${esc(p.name)||"Product cost sheet"}${p.available?"":" (currently unavailable)"}</h1>
     <div class="pmeta">${esc(p.sku)?esc(p.sku)+" · ":""}${p.servings} servings this session · ${state.currency}</div>
-    <div class="psec">Ingredients (for this cook)</div>
-    <table><thead><tr><th>Ingredient</th><th class="pnum">Qty</th><th>Unit</th><th class="pnum">Unit cost</th><th class="pnum">Line</th></tr></thead>
-    <tbody>${mat}<tr class="ptotal"><td colspan="4">Batch ingredient cost</td><td class="pnum">${money(f.matBatch)}</td></tr>
-    <tr class="ptotal"><td colspan="4">Ingredient cost / serving</td><td class="pnum">${money(f.matUnit)}</td></tr></tbody></table>
+    <div class="psec">Raw materials (for this cook)</div>
+    <table><thead><tr><th>Material</th><th class="pnum">Qty</th><th>Unit</th><th class="pnum">Unit cost</th><th class="pnum">Line</th></tr></thead>
+    <tbody>${mat}<tr class="ptotal"><td colspan="4">Batch material cost</td><td class="pnum">${money(f.matBatch)}</td></tr>
+    <tr class="ptotal"><td colspan="4">Material cost / serving</td><td class="pnum">${money(f.matUnit)}</td></tr></tbody></table>
     <div class="psec">Packaging (per serving)</div>
     <table><thead><tr><th>Item</th><th class="pnum">Qty</th><th class="pnum">Cost each</th><th class="pnum">Line</th></tr></thead>
     <tbody>${pack}<tr class="ptotal"><td colspan="3">Packaging / serving</td><td class="pnum">${money(f.packUnit)}</td></tr></tbody></table>
     <div class="psec">Overhead (per batch)</div>
-    <table><tbody>${ov}<tr class="ptotal"><td>Overhead / batch</td><td class="pnum">${money(f.ohBatch)}</td></tr>
-    <tr class="ptotal"><td>Overhead / serving</td><td class="pnum">${money(f.ohUnit)}</td></tr></tbody></table>
+    <table><tbody>${ov}<tr class="ptotal"><td colspan="2">Overhead / batch</td><td class="pnum">${money(f.ohBatch)}</td></tr>
+    <tr class="ptotal"><td colspan="2">Overhead / serving</td><td class="pnum">${money(f.ohUnit)}</td></tr></tbody></table>
     <div class="psec">Cost &amp; price (per serving)</div>
     <table><tbody>
       <tr><td>Ingredients + packaging</td><td class="pnum">${money(f.directUnit)}</td></tr>
