@@ -6,7 +6,7 @@
     "label": "Order on Messenger",
     "url": "https://m.me/syntax.premiero"
   },
-  "generatedAt": "2026-09-09T01:15:39.337Z",
+  "generatedAt": "2026-09-09T01:21:26.610Z",
   "types": [
     {
       "name": "Foods",
@@ -14,6 +14,18 @@
         {
           "name": "Dessy's Special Carbonara",
           "price": 189,
+          "description": "",
+          "image": ""
+        },
+        {
+          "name": "PJ's Savory Monggo",
+          "price": 150,
+          "description": "",
+          "image": ""
+        },
+        {
+          "name": "Product C",
+          "price": 20,
           "description": "",
           "image": ""
         }
