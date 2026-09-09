@@ -1,16 +1,37 @@
 {
-  "business": "Barluado's Kitchen",
-  "tagline": "Home-cooked lunch, made to order",
+  "business": "Barluado's business",
+  "tagline": "Mini-online business",
   "currency": "PHP",
-  "order": { "label": "Order on Messenger", "url": "https://m.me/syntax.premiero" },
-  "generatedAt": "2026-09-09T00:00:00.000Z",
+  "order": {
+    "label": "Order on Messenger",
+    "url": "https://m.me/syntax.premiero"
+  },
+  "generatedAt": "2026-09-09T20:48:48.478Z",
   "types": [
     {
-      "name": "Lunch menu",
+      "name": "Foods",
       "products": [
-        { "name": "Monggo", "price": 136, "description": "Slow-cooked pork monggo with rice.", "image": "", "available": true },
-        { "name": "Pasta Carbonara", "price": 165, "description": "Creamy carbonara with bacon.", "image": "", "available": true },
-        { "name": "Extra plain rice", "price": 16, "description": "An extra cup of steamed rice.", "image": "", "available": false }
+        {
+          "name": "Dessy's Special Carbonara",
+          "price": 189,
+          "description": "",
+          "image": "",
+          "available": false
+        },
+        {
+          "name": "PJ's Savory Monggo",
+          "price": 149,
+          "description": "",
+          "image": "",
+          "available": false
+        },
+        {
+          "name": "Extra plain rice",
+          "price": 17,
+          "description": "",
+          "image": "",
+          "available": false
+        }
       ]
     }
   ]
