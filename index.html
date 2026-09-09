@@ -218,6 +218,9 @@ function renderCart(){
       '<div class="qty"><button data-q="'+k+'" data-d="-1">−</button><span>'+it.qty+'</span><button data-q="'+k+'" data-d="1">+</button></div>'+
       '<div class="li-tot">'+fmt(line)+'</div></div>'; }).join("");
   $("cartTotal").textContent=fmt(total); $("sendBtn").disabled=false;
+  const url=((catalog.order&&catalog.order.url)||"").toLowerCase();
+  const prefill = url.indexOf("wa.me")>=0||url.indexOf("whatsapp")>=0||url.indexOf("mailto:")===0||url.indexOf("sms:")===0;
+  $("sendNote").textContent = prefill ? "Opens with your order ready to send." : "We'll copy your order and open Messenger — just paste and send.";
 }
 
 function orderMessage(){
@@ -232,7 +235,9 @@ function sendOrder(){
   if(low.indexOf("mailto:")===0){ location.href=url+(url.indexOf("?")>=0?"&":"?")+"subject="+encodeURIComponent("New order")+"&body="+enc; return; }
   if(low.indexOf("wa.me")>=0||low.indexOf("api.whatsapp")>=0||low.indexOf("web.whatsapp")>=0){ window.open(url+(url.indexOf("?")>=0?"&":"?")+"text="+enc,"_blank"); return; }
   if(low.indexOf("sms:")===0){ location.href=url+(url.indexOf("?")>=0?"&":"?")+"body="+enc; return; }
-  copy(msg); window.open(url,"_blank"); toast("Order copied — paste it in the chat that opened.");
+  copy(msg);
+  const ok=confirm("We've copied your order to your clipboard.\n\nNext: we'll open our Messenger chat — just tap the message box and press Paste, then Send.\n\nOpen Messenger now?");
+  if(ok){ window.open(url,"_blank"); toast("Order copied — paste it in the chat and send."); }
 }
 function copy(t){ try{ navigator.clipboard.writeText(t); }catch(e){} }
 let toastT=null;
