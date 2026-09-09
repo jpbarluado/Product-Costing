@@ -1,25 +1,25 @@
 {
-  "business": "Barluado's business",
+  "business": "Corpo Lunch",
   "tagline": "Mini-online business",
   "currency": "PHP",
   "order": {
     "label": "Order on Messenger",
     "url": "https://m.me/syntax.premiero"
   },
-  "generatedAt": "2026-09-09T20:51:35.175Z",
+  "generatedAt": "2026-09-09T20:53:03.048Z",
   "types": [
     {
       "name": "Foods",
       "products": [
         {
-          "name": "Dessy's Special Carbonara",
+          "name": "Special Carbonara",
           "price": 189,
           "description": "",
           "image": "",
           "available": false
         },
         {
-          "name": "PJ's Savory Monggo",
+          "name": "Savory Monggo",
           "price": 149,
           "description": "",
           "image": "",
