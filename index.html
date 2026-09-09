@@ -54,6 +54,9 @@
   .add{border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:9px;padding:8px 14px;font-size:13.5px;font-weight:600;cursor:pointer}
   .add:hover{background:var(--accent);color:#fff}
   .add.in{background:var(--accent);color:#fff}
+  .card.unavail{opacity:.72}
+  .card.unavail .thumb,.card.unavail .thumb-ph{filter:grayscale(.7)}
+  .badge-na{display:inline-block;background:var(--soft);color:var(--muted);border:1px solid var(--rule);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600}
 
   .scrim{position:fixed;inset:0;background:rgba(16,24,38,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
   .scrim.open{opacity:1;pointer-events:auto}
@@ -126,13 +129,13 @@ const FALLBACK = {
   currency:"PHP", order:{label:"Order on Messenger",url:"https://m.me/yourpage"},
   types:[
     {name:"Foods",products:[
-      {name:"Beef Tapa Rice Bowl",price:189,description:"Sweet-savoury cured beef, garlic rice and a runny egg.",image:""},
-      {name:"Chicken Adobo Bowl",price:149,description:"Slow-braised chicken in soy and vinegar over steamed rice.",image:""},
-      {name:"Ube Cheese Pandesal (6pc)",price:119,description:"Soft rolls filled with ube halaya and a salty cheese ribbon.",image:""}]},
+      {name:"Beef Tapa Rice Bowl",price:189,description:"Sweet-savoury cured beef, garlic rice and a runny egg.",image:"",available:true},
+      {name:"Chicken Adobo Bowl",price:149,description:"Slow-braised chicken in soy and vinegar over steamed rice.",image:"",available:true},
+      {name:"Ube Cheese Pandesal (6pc)",price:119,description:"Soft rolls filled with ube halaya and a salty cheese ribbon.",image:"",available:true}]},
     {name:"Crafts",products:[
-      {name:"Resin Keychain",price:120,description:"Hand-poured resin charm, each one slightly different.",image:""},
-      {name:"Beaded Bracelet",price:80,description:"Adjustable beaded bracelet with a small charm.",image:""},
-      {name:"Scented Soy Candle",price:189,description:"Clean-burning soy candle in a reusable tin.",image:""}]}
+      {name:"Resin Keychain",price:120,description:"Hand-poured resin charm, each one slightly different.",image:"",available:true},
+      {name:"Beaded Bracelet",price:80,description:"Adjustable beaded bracelet with a small charm.",image:"",available:true},
+      {name:"Scented Soy Candle",price:189,description:"Clean-burning soy candle in a reusable tin.",image:"",available:true}]}
   ]
 };
 
@@ -181,14 +184,18 @@ function render(){
     const grid=document.createElement("div"); grid.className="grid";
     t.products.forEach(p=>{
       const k=keyOf(t.name,p.name);
+      const na=p.available===false;
       const inCart=cart[k]?"in":"";
       const media=p.image? '<img class="thumb" src="'+esc(p.image)+'" alt="'+esc(p.name)+'" onerror="this.outerHTML=window.__ph('+JSON.stringify(p.name).replace(/"/g,"&quot;")+')">' : placeholder(p.name);
-      const card=document.createElement("div"); card.className="card";
+      const action = na
+        ? '<span class="badge-na">Currently unavailable</span>'
+        : '<button class="add '+inCart+'" data-add="'+k+'" data-name="'+esc(p.name)+'" data-price="'+numv(p.price)+'">'+(inCart?"Added ✓":"Add")+'</button>';
+      const card=document.createElement("div"); card.className="card"+(na?" unavail":"");
       card.innerHTML=media+
         '<div class="card-body"><h3>'+esc(p.name)+'</h3>'+
         '<p class="desc">'+esc(p.description||"")+'</p>'+
         '<div class="card-foot"><span class="price">'+fmt(numv(p.price))+'</span>'+
-        '<button class="add '+inCart+'" data-add="'+k+'" data-name="'+esc(p.name)+'" data-price="'+numv(p.price)+'">'+(inCart?"Added ✓":"Add")+'</button></div></div>';
+        action+'</div></div>';
       grid.appendChild(card);
     });
     sec.appendChild(grid); root.appendChild(sec);
