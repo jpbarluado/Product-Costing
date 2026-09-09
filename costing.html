@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Cost Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#101826; --paper:#F5F7F9; --surface:#FFFFFF;
+    --accent:#0B6E75; --accent-2:#14919B; --profit:#157F5B; --danger:#B4413C;
+    --rule:#DCE3E8; --muted:#5B6B78; --soft:#EEF2F5; --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--paper);line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:76px;}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+  input,select,button{font-family:inherit;font-size:inherit;color:inherit}
+  .num{font-variant-numeric:tabular-nums;text-align:right}
+
+  .mast{background:var(--surface);border-bottom:1px solid var(--rule)}
+  .mast-inner{display:flex;gap:24px;align-items:flex-start;justify-content:space-between;padding:20px 0;flex-wrap:wrap}
+  .company-input{border:none;background:transparent;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.02em;padding:2px 0;width:100%;max-width:320px;border-bottom:1px solid transparent;margin-bottom:6px}
+  .company-input:hover{border-bottom-color:var(--soft)}
+  .company-input:focus{outline:none;border-bottom-color:var(--accent);color:var(--ink)}
+  .type-input{border:none;background:transparent;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);padding:2px 0;width:100%;max-width:320px;border-bottom:1px solid transparent;margin-bottom:6px}
+  .type-input:hover{border-bottom-color:var(--soft)}
+  .type-input:focus{outline:none;border-bottom-color:var(--accent)}
+  .title-input{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:29px;line-height:1.15;border:none;background:transparent;padding:2px 0;width:100%;max-width:460px;color:var(--ink);border-bottom:2px solid transparent}
+  .title-input:hover{border-bottom-color:var(--soft)}
+  .title-input:focus{outline:none;border-bottom-color:var(--accent)}
+  .meta-row{display:flex;gap:18px 26px;flex-wrap:wrap;margin-top:14px}
+  .field{display:flex;flex-direction:column;gap:3px}
+  .field label{font-size:11px;color:var(--muted);letter-spacing:.02em}
+  .field input,.field select{border:1px solid var(--rule);background:var(--surface);border-radius:7px;padding:6px 9px;min-width:120px}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,110,117,.12)}
+  .hero{text-align:right;min-width:200px;flex:0 0 auto;border-left:1px solid var(--rule);padding-left:24px}
+  .hero-label{font-size:12px;color:var(--muted);letter-spacing:.04em}
+  .hero-num{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:44px;line-height:1.05;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin:2px 0;color:var(--ink)}
+  .hero-sub{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  /* chip bars (types + products share styling) */
+  .chipbar{background:var(--surface);border-bottom:1px solid var(--rule)}
+  .chipbar.typebar{background:#F0F5F5}
+  .chipbar-inner{display:flex;gap:8px;align-items:center;padding:11px 0;overflow-x:auto;scrollbar-width:thin}
+  .cblabel{font-size:10.5px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-weight:600;flex:0 0 auto;margin-right:6px}
+  .chip{flex:0 0 auto;border:1px solid var(--rule);background:var(--surface);border-radius:20px;padding:6px 14px;cursor:pointer;font-size:13.5px;color:var(--ink);white-space:nowrap;display:flex;align-items:center;gap:8px}
+  .chip:hover{border-color:var(--accent-2)}
+  .chip .cu{font-variant-numeric:tabular-nums;font-size:11.5px;opacity:.7}
+  .prod-chip[aria-current="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .type-chip[aria-current="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .chip-add{flex:0 0 auto;border:1px dashed var(--rule);background:transparent;border-radius:20px;padding:6px 14px;cursor:pointer;font-size:13.5px;color:var(--accent);white-space:nowrap}
+  .chip-add:hover{border-color:var(--accent);background:rgba(11,110,117,.04)}
+  .chipbar-inner .spacer{flex:1;min-width:8px}
+  .mini-btn{flex:0 0 auto;border:1px solid var(--rule);background:var(--surface);border-radius:7px;padding:6px 10px;font-size:12.5px;cursor:pointer;color:var(--muted)}
+  .mini-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .mini-btn.warn:hover{border-color:var(--danger);color:var(--danger)}
+
+  .toolbar{background:var(--paper);border-bottom:1px solid var(--rule)}
+  .type-toolbar{position:sticky;top:0;z-index:22;background:var(--paper)}
+  .prod-toolbar{background:var(--surface)}
+  .toolbar-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .tabs{display:flex;gap:2px;flex-wrap:wrap;align-items:center}
+  .navlabel{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-right:14px}
+  .tab{border:none;background:transparent;cursor:pointer;padding:14px 4px;margin-right:20px;color:var(--muted);font-weight:500;font-size:14.5px;position:relative}
+  .tab:hover{color:var(--ink)}
+  .tab[aria-selected="true"]{color:var(--ink);font-weight:600}
+  .tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent)}
+  .tab.biz[aria-selected="true"]{color:var(--accent)} .tab.biz[aria-selected="true"]::after{background:var(--accent)}
+  .actions{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0;align-items:center}
+  .save-status{font-size:12px;color:var(--muted);margin-right:6px;white-space:nowrap}
+  .btn{border:1px solid var(--rule);background:var(--surface);cursor:pointer;border-radius:7px;padding:7px 11px;font-size:13px;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .btn.primary:hover{background:#0a121f;color:#fff}
+  .btn.warn:hover{border-color:var(--danger);color:var(--danger)}
+  body.biz-mode .prodbar, body.biz-mode .prod-toolbar{opacity:.5}
+  body.biz-mode .prodbar:hover, body.biz-mode .prod-toolbar:hover{opacity:1}
+
+  main{padding:26px 0 40px}
+  .panel{display:none} .panel.active{display:block}
+  .panel-head h2{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:20px;margin:0 0 3px}
+  .panel-head p{margin:0 0 18px;color:var(--muted);font-size:13.5px;max-width:68ch}
+  .section-sub{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;margin:28px 0 12px;display:flex;align-items:baseline;gap:8px}
+  .section-sub.first{margin-top:4px}
+  .section-sub span{font-size:12px;color:var(--muted);font-weight:400}
+
+  .ledger{width:100%;border-collapse:collapse}
+  .ledger thead th{text-align:left;font-size:11px;letter-spacing:.06em;color:var(--muted);font-weight:600;text-transform:uppercase;padding:0 10px 8px;border-bottom:1px solid var(--rule)}
+  .ledger thead th.num{text-align:right}
+  .ledger tbody td{padding:5px 10px;border-bottom:1px solid var(--soft);vertical-align:middle}
+  .ledger tbody tr:hover{background:#FAFCFD}
+  .cell-input{width:100%;border:1px solid transparent;background:transparent;border-radius:6px;padding:7px 8px}
+  .cell-input:hover{border-color:var(--rule)}
+  .cell-input:focus{outline:none;border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px rgba(11,110,117,.1)}
+  td.num .cell-input{text-align:right;font-variant-numeric:tabular-nums}
+  td.unit-cell{width:110px} td.qty-cell,td.cost-cell{width:120px}
+  td.line{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:500;white-space:nowrap;padding-right:10px}
+  td.rm{width:38px;text-align:center}
+  .rm-btn{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;border-radius:6px;width:28px;height:28px}
+  .rm-btn:hover{background:#FBECEB;color:var(--danger)}
+  .empty{padding:20px 10px;color:var(--muted);font-size:13.5px}
+  .add-row{margin-top:10px}
+  .add-btn{border:1px dashed var(--rule);background:transparent;color:var(--accent);cursor:pointer;border-radius:8px;padding:9px 14px;font-size:13.5px;font-weight:500;width:100%}
+  .add-btn:hover{border-color:var(--accent);background:rgba(11,110,117,.04)}
+  .panel-foot{margin-top:16px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end}
+  .foot-note{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)}
+  .foot-note input{width:120px;border:1px solid var(--rule);border-radius:6px;padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums}
+  .subtotals{min-width:280px;font-variant-numeric:tabular-nums;font-size:13.5px}
+  .subtotals .srow{display:flex;justify-content:space-between;padding:5px 0}
+  .subtotals .srow.total{border-top:1px solid var(--rule);margin-top:4px;padding-top:9px;font-weight:600;font-size:15px}
+  .subtotals .lab{color:var(--muted)}
+  .cost-card{background:var(--ink);color:#fff;border-radius:var(--radius);padding:18px 22px;margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  .cost-card .fc-label{font-size:12px;color:#9fb0bd}
+  .cost-card .fc-num{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:34px;font-variant-numeric:tabular-nums;line-height:1.05;margin-top:3px}
+  .cost-card .fc-side{text-align:right;font-size:12.5px;color:#9fb0bd;font-variant-numeric:tabular-nums}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px}
+  .tile{border:1px solid var(--rule);border-radius:var(--radius);padding:15px 17px;background:var(--surface)}
+  .tile .t-label{font-size:11.5px;color:var(--muted)}
+  .tile .t-num{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:22px;font-variant-numeric:tabular-nums;margin-top:3px}
+  .tile .t-sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .tile.good .t-num{color:var(--profit)} .tile.bad .t-num{color:var(--danger)} .tile.profit .t-num{color:var(--profit)}
+  .price-controls{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .price-controls .field input{width:150px;text-align:right;font-variant-numeric:tabular-nums}
+  .callout{margin-top:22px;background:var(--soft);border:1px solid var(--rule);border-radius:var(--radius);padding:16px 18px;font-size:14px;line-height:1.55}
+  .callout strong{font-family:"Space Grotesk",sans-serif}
+  .alloc-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+  .alloc-row .field select,.alloc-row .field input{min-width:150px}
+  .allprod{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;margin-top:6px}
+  .allprod thead th{text-align:right;font-size:11px;letter-spacing:.05em;color:var(--muted);font-weight:600;text-transform:uppercase;padding:0 12px 9px;border-bottom:1px solid var(--rule)}
+  .allprod thead th:first-child{text-align:left}
+  .allprod tbody td{padding:11px 12px;border-bottom:1px solid var(--soft);text-align:right}
+  .allprod tbody td:first-child{text-align:left;font-weight:500}
+  .allprod tbody tr{cursor:pointer} .allprod tbody tr:hover{background:#FAFCFD}
+  .allprod .psku{color:var(--muted);font-weight:400;font-size:12px}
+  .allprod .pctcell.bad{color:var(--danger)} .allprod .pctcell.good{color:var(--profit)}
+  .allprod .profitcell.bad{color:var(--danger)} .allprod .profitcell.good{color:var(--profit)}
+  .allprod tfoot td{padding:12px;border-top:2px solid var(--ink);font-weight:700;text-align:right;font-family:"Space Grotesk",sans-serif}
+  .allprod tfoot td:first-child{text-align:left}
+  .scroll-x{overflow-x:auto}
+  .tape{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--ink);color:#fff}
+  .tape-inner{max-width:1000px;margin:0 auto;padding:11px 20px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;font-variant-numeric:tabular-nums;font-size:13px}
+  .tape .tcell{display:flex;flex-direction:column;line-height:1.25}
+  .tape .tcell .tl{font-size:10.5px;color:#8fa2b0;letter-spacing:.04em}
+  .tape .tcell .tv{font-weight:600;font-size:14px}
+  .tape .tcell.spacer{flex:1}
+  .tape .tprod{font-size:11px;color:#8fa2b0}
+  .tape .tcell.grand .tv{font-family:"Space Grotesk",sans-serif;font-size:16px}
+  .flash{animation:flash .5s ease}
+  @keyframes flash{0%{color:var(--accent-2)}100%{color:#fff}}
+  footer{color:var(--muted);font-size:12px;padding:0 0 12px;text-align:center}
+  .modal-bg{position:fixed;inset:0;background:rgba(16,24,38,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal{background:var(--surface);border-radius:14px;max-width:520px;width:100%;padding:24px;box-shadow:0 20px 60px -20px rgba(0,0,0,.4)}
+  .modal h3{font-family:"Space Grotesk",sans-serif;font-weight:600;margin:0 0 8px;font-size:19px}
+  .modal p{color:var(--muted);font-size:13.5px;margin:0 0 18px;line-height:1.55}
+  .modal .field{margin-bottom:14px}
+  .modal .field input{width:100%}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+  .modal code{background:var(--soft);padding:1px 5px;border-radius:4px;font-size:12px}
+  #printArea{display:none}
+  @media print{
+    body{background:#fff;padding:0}
+    .mast,.chipbar,.toolbar,main,.tape,footer{display:none!important}
+    #printArea{display:block!important;padding:28px}
+    #printArea .pcompany{font-size:12px;color:#555;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+    #printArea h1{font-family:"Space Grotesk",sans-serif;font-size:22px;margin:0 0 2px}
+    #printArea .pmeta{color:#555;font-size:12px;margin-bottom:18px}
+    #printArea table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px}
+    #printArea th{text-align:left;border-bottom:1px solid #000;padding:5px 6px;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+    #printArea td{padding:4px 6px;border-bottom:1px solid #ddd}
+    #printArea .pnum{text-align:right;font-variant-numeric:tabular-nums}
+    #printArea .psec{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;margin:14px 0 6px}
+    #printArea .ptotal td{font-weight:700;border-top:1px solid #000;border-bottom:none}
+  }
+  @media (max-width:720px){ .hero{border-left:none;padding-left:0;text-align:left;width:100%} .hero-num{font-size:38px} }
+  @media (prefers-reduced-motion:reduce){.flash{animation:none}}
+</style>
+</head>
+<body>
+
+<header class="mast"><div class="wrap mast-inner">
+  <div class="mast-left" style="flex:1;min-width:280px">
+    <input id="companyName" class="company-input" placeholder="Your business" aria-label="Business name">
+    <input id="typeName" class="type-input" placeholder="Business type" aria-label="Business type name">
+    <input id="pName" class="title-input" placeholder="Untitled product" aria-label="Product name">
+    <div class="meta-row">
+      <div class="field"><label for="pSku">Product code</label><input id="pSku" placeholder="—"></div>
+      <div class="field"><label for="pCur">Currency</label>
+        <select id="pCur">
+          <option value="PHP">₱ PHP</option><option value="USD">$ USD</option><option value="EUR">€ EUR</option>
+          <option value="GBP">£ GBP</option><option value="AUD">$ AUD</option><option value="SGD">$ SGD</option>
+          <option value="JPY">¥ JPY</option><option value="INR">₹ INR</option><option value="CAD">$ CAD</option>
+        </select></div>
+    </div>
+  </div>
+  <div class="hero">
+    <div class="hero-label">Cost per unit</div>
+    <div class="hero-num" id="heroCost">—</div>
+    <div class="hero-sub" id="heroSub">—</div>
+  </div>
+</div></header>
+
+<!-- Business types (top level) -->
+<div class="chipbar typebar"><div class="wrap chipbar-inner" id="typebar">
+  <span class="cblabel">Business type</span>
+  <span class="spacer"></span>
+  <button class="mini-btn" data-action="duplicateType">Duplicate type</button>
+  <button class="mini-btn warn" data-action="deleteType">Delete type</button>
+</div></div>
+
+<!-- This type: shared costs + summary -->
+<div class="toolbar type-toolbar"><div class="wrap toolbar-inner">
+  <nav class="tabs" role="tablist" aria-label="Type sections">
+    <span class="navlabel">This type</span>
+    <button class="tab biz" role="tab" data-tab="overhead" aria-selected="false">Overhead</button>
+    <button class="tab biz" role="tab" data-tab="summary" aria-selected="false">Summary</button>
+  </nav>
+  <div class="actions">
+    <span id="saveStatus" class="save-status"></span>
+    <button class="btn" data-action="sample">Sample</button>
+    <button class="btn warn" data-action="clear">Reset</button>
+    <button class="btn" data-action="import">Import</button>
+    <button class="btn" data-action="csv">Export CSV</button>
+    <button class="btn" data-action="json">Save JSON</button>
+    <button class="btn" data-action="publish">Publish site</button>
+    <button class="btn primary" data-action="print">Print</button>
+  </div>
+</div></div>
+
+<!-- Products within this type -->
+<div class="chipbar prodbar"><div class="wrap chipbar-inner" id="prodbar"><span class="cblabel">Products</span></div></div>
+
+<!-- This product -->
+<div class="toolbar prod-toolbar"><div class="wrap toolbar-inner">
+  <nav class="tabs" role="tablist" aria-label="Product sections">
+    <span class="navlabel">This product</span>
+    <button class="tab" role="tab" data-tab="materials" aria-selected="true">Materials</button>
+    <button class="tab" role="tab" data-tab="pricing" aria-selected="false">Pricing</button>
+  </nav>
+  <div class="actions">
+    <button class="btn" data-action="duplicate">Duplicate</button>
+    <button class="btn warn" data-action="deleteProduct">Delete</button>
+  </div>
+</div></div>
+
+<main class="wrap">
+  <section class="panel" id="tab-materials">
+    <div class="panel-head"><h2>Materials</h2>
+      <p>Raw materials or ingredients for one batch, then how many units that batch makes. Packaging is counted per unit. Together these are the direct cost of one unit.</p></div>
+    <div class="section-sub first">Materials <span>— for one batch</span></div>
+    <table class="ledger"><thead><tr>
+      <th>Material</th><th class="num">Qty</th><th>Unit</th><th class="num">Unit cost</th><th class="num">Line total</th><th></th>
+    </tr></thead><tbody id="matBody"></tbody></table>
+    <div class="add-row"><button class="add-btn" data-add="materials">+ Add material</button></div>
+    <div class="panel-foot">
+      <div class="foot-note"><label for="pYield">Units per batch</label><input id="pYield" type="number" min="1" step="1" class="num"></div>
+      <div class="subtotals">
+        <div class="srow"><span class="lab">Batch material cost</span><span id="matBatch">—</span></div>
+        <div class="srow total"><span>Material cost / unit</span><span id="matUnit">—</span></div>
+      </div>
+    </div>
+    <div class="section-sub">Packaging <span>— per unit</span></div>
+    <table class="ledger"><thead><tr>
+      <th>Packaging item</th><th class="num">Qty</th><th class="num">Cost each</th><th class="num">Line total</th><th></th>
+    </tr></thead><tbody id="packBody"></tbody></table>
+    <div class="add-row"><button class="add-btn" data-add="packaging">+ Add packaging</button></div>
+    <div class="panel-foot">
+      <div class="foot-note"></div>
+      <div class="subtotals"><div class="srow total"><span>Packaging / unit</span><span id="packUnit">—</span></div></div>
+    </div>
+    <div class="cost-card">
+      <div><div class="fc-label">Direct cost per unit</div><div class="fc-num" id="directUnit">—</div></div>
+      <div class="fc-side" id="directBreakdown">—</div>
+    </div>
+  </section>
+
+  <section class="panel" id="tab-pricing">
+    <div class="panel-head"><h2>Pricing</h2>
+      <p>Set your price and expected sales. You’ll see the direct cost %, the overhead automatically allocated per unit, the fully-loaded total cost, and the profit left over.</p></div>
+    <div class="price-controls">
+      <div class="field"><label for="pPrice">Selling price / unit</label><input id="pPrice" type="number" min="0" step="0.5" class="num"></div>
+      <div class="field"><label for="pExpected">Expected units / <span class="periodlbl">day</span></label><input id="pExpected" type="number" min="0" step="1" class="num"></div>
+      <div class="field"><label for="targetPct">Target cost %</label><input id="targetPct" type="number" min="1" max="99" step="1" class="num"></div>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="t-label">Direct cost / unit</div><div class="t-num" id="prDirect">—</div></div>
+      <div class="tile"><div class="t-label">+ Overhead / unit</div><div class="t-num" id="prOh">—</div><div class="t-sub" id="prOhSub">allocated</div></div>
+      <div class="tile"><div class="t-label">= Total cost / unit</div><div class="t-num" id="prTotal">—</div></div>
+      <div class="tile" id="prPctTile"><div class="t-label">Direct cost %</div><div class="t-num" id="prPct">—</div><div class="t-sub" id="prPctSub">vs target</div></div>
+      <div class="tile profit" id="prProfitTile"><div class="t-label">Profit / unit</div><div class="t-num" id="prProfit">—</div><div class="t-sub">price − total cost</div></div>
+      <div class="tile"><div class="t-label">Suggested price</div><div class="t-num" id="prSuggest">—</div><div class="t-sub" id="prSuggestSub">at target cost %</div></div>
+    </div>
+    <div class="callout" id="pricingNote">—</div>
+    <div class="section-sub">Website listing <span>— what customers see</span></div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:14px;margin-bottom:14px;cursor:pointer">
+      <input type="checkbox" id="webShow"> Show this product on the marketing site
+    </label>
+    <div class="price-controls">
+      <div class="field" style="flex:1;min-width:260px"><label for="webDesc">Short description</label><input id="webDesc" placeholder="e.g. Slow-cooked beef, served with garlic rice"></div>
+      <div class="field" style="flex:1;min-width:260px"><label for="webImg">Image URL (optional)</label><input id="webImg" placeholder="https://…"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="tab-overhead">
+    <div class="panel-head"><h2>Overhead <span style="font-weight:400;color:var(--muted);font-size:14px">— shared within this type</span></h2>
+      <p>Costs shared across the products in this business type — rent, electricity, transport, a talent fee. Each type keeps its own overhead. Enter it once and it spreads automatically across this type’s products.</p></div>
+    <div class="alloc-row">
+      <div class="field"><label for="allocMethod">Spread overhead…</label>
+        <select id="allocMethod">
+          <option value="units">By units sold (recommended)</option>
+          <option value="revenue">By revenue share</option>
+          <option value="perProduct">Evenly per product</option>
+          <option value="none">Don’t allocate (break-even only)</option>
+        </select></div>
+      <div class="field"><label for="period">Period label</label><input id="period" placeholder="day" style="width:120px"></div>
+    </div>
+    <table class="ledger" style="max-width:560px"><thead><tr><th>Cost</th><th class="num">Amount / <span class="periodlbl">day</span></th><th></th></tr></thead>
+      <tbody id="ovBody"></tbody></table>
+    <div class="add-row" style="max-width:560px"><button class="add-btn" data-add="overhead">+ Add overhead cost</button></div>
+    <div class="panel-foot" style="max-width:560px">
+      <div class="foot-note" id="ovSpread">—</div>
+      <div class="subtotals" style="min-width:220px"><div class="srow total"><span>Total overhead</span><span id="ovTotal">—</span></div></div>
+    </div>
+  </section>
+
+  <section class="panel" id="tab-summary">
+    <div class="panel-head"><h2 id="suHead">Summary</h2>
+      <p>Rolled up across the products in this type, at your expected volumes. Click a row to open that product.</p></div>
+    <div class="tiles" style="margin-bottom:22px">
+      <div class="tile"><div class="t-label">Overhead / <span class="periodlbl">day</span></div><div class="t-num" id="suOh">—</div></div>
+      <div class="tile"><div class="t-label">Projected sales</div><div class="t-num" id="suRev">—</div><div class="t-sub">at expected volume</div></div>
+      <div class="tile"><div class="t-label">Projected total cost</div><div class="t-num" id="suCost">—</div><div class="t-sub">materials + overhead</div></div>
+      <div class="tile profit" id="suProfitTile"><div class="t-label">Projected profit</div><div class="t-num" id="suProfit">—</div><div class="t-sub">per <span class="periodlbl">day</span></div></div>
+    </div>
+    <div class="callout" id="suStatement">—</div>
+    <div class="scroll-x"><table class="allprod">
+      <thead><tr>
+        <th>Product</th><th>Direct/unit</th><th>Overhead/unit</th><th>Total/unit</th><th>Price</th><th>Cost %</th><th>Profit/unit</th><th>Exp.</th><th>Proj. profit</th>
+      </tr></thead>
+      <tbody id="allBody"></tbody>
+      <tfoot><tr>
+        <td>Totals</td><td></td><td></td><td></td><td></td><td id="afPct">—</td><td></td><td id="afUnits">—</td><td id="afProfit">—</td>
+      </tr></tfoot>
+    </table></div>
+    <div class="callout" id="companyRoll" style="background:var(--surface)">—</div>
+  </section>
+</main>
+
+<div class="tape"><div class="tape-inner">
+  <div class="tcell"><span class="tl">Product</span><span class="tv tprod" id="tProd">—</span></div>
+  <div class="tcell"><span class="tl">Direct/unit</span><span class="tv" id="tDirect">—</span></div>
+  <div class="tcell"><span class="tl">Overhead/unit</span><span class="tv" id="tOh">—</span></div>
+  <div class="tcell spacer"></div>
+  <div class="tcell grand"><span class="tl">Total cost/unit</span><span class="tv" id="tTotal">—</span></div>
+  <div class="tcell grand"><span class="tl">Profit/unit</span><span class="tv" id="tProfit">—</span></div>
+</div></div>
+
+<footer class="wrap">Runs entirely in your browser — nothing is uploaded. Auto-saves here; use Save&nbsp;JSON for a portable backup.</footer>
+
+<datalist id="units">
+  <option value="g"><option value="kg"><option value="mL"><option value="L"><option value="pcs">
+  <option value="cup"><option value="tbsp"><option value="tsp"><option value="pack"><option value="set"><option value="m"><option value="cm">
+</datalist>
+
+<div id="printArea"></div>
+<div id="pubModal" class="modal-bg" style="display:none"><div class="modal">
+  <h3>Publish to your marketing site</h3>
+  <p>Downloads <code>catalog.json</code> — the public file your website reads. It includes only what customers should see: business name, product names, descriptions, images and prices. It never includes your costs, materials, overhead, margins or expected volumes.</p>
+  <div class="field"><label for="tagline">Tagline (shown on the site)</label><input id="tagline" placeholder="e.g. Handcrafted food & gifts"></div>
+  <div class="field"><label for="orderLabel">Order button label</label><input id="orderLabel" placeholder="e.g. Order on Messenger"></div>
+  <div class="field"><label for="orderUrl">Order link — Messenger, WhatsApp (wa.me/63…), mailto: or any URL</label><input id="orderUrl" placeholder="https://m.me/yourpage"></div>
+  <div class="modal-actions">
+    <button class="btn" data-action="closePublish">Close</button>
+    <button class="btn primary" data-action="downloadCatalog">Download catalog.json</button>
+  </div>
+</div></div>
+<input type="file" id="fileInput" accept="application/json,.json" style="display:none">
+
+<script>
+"use strict";
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+function emptyProduct(name){
+  return { id:uid(), name:name||"New product", sku:"", yield:1, expectedUnits:0, price:0,
+    materials:[{id:uid(),name:"",qty:0,unit:"g",unitCost:0}],
+    packaging:[{id:uid(),name:"",qty:1,unitCost:0}],
+    web:{show:true,desc:"",img:""} };
+}
+function emptyType(name){
+  const p=emptyProduct("Product A");
+  return { id:uid(), name:name||"New type", targetPct:33, period:"day", allocMethod:"units",
+    overhead:[{id:uid(),name:"",amount:0}], products:[p], activeId:p.id };
+}
+function sampleState(){
+  return { company:"Northwind Ventures", currency:"PHP", tagline:"Handcrafted food & gifts, made fresh to order", orderLink:{label:"Order on Messenger",url:"https://m.me/yourpage"}, activeTypeId:"t1", types:[
+    { id:"t1", name:"Foods", targetPct:33, period:"day", allocMethod:"units", activeId:"p1",
+      overhead:[
+        {id:uid(),name:"Talent fee (owners)",amount:1000},
+        {id:uid(),name:"LPG / gas",amount:250},
+        {id:uid(),name:"Electricity",amount:150},
+        {id:uid(),name:"Transport",amount:300},
+        {id:uid(),name:"Market stall rent",amount:500}],
+      products:[
+        { id:"p1", name:"Beef Tapa Rice Bowl", sku:"BOWL-01", yield:20, expectedUnits:20, price:189,
+          materials:[{id:uid(),name:"Beef (tapa cut)",qty:2,unit:"kg",unitCost:400},{id:uid(),name:"Rice",qty:3,unit:"kg",unitCost:55},{id:uid(),name:"Eggs",qty:20,unit:"pcs",unitCost:8},{id:uid(),name:"Aromatics & oil",qty:1,unit:"set",unitCost:175}],
+          packaging:[{id:uid(),name:"Bowl + lid",qty:1,unitCost:12},{id:uid(),name:"Spork + napkin",qty:1,unitCost:3}] },
+        { id:"p2", name:"Chicken Adobo Bowl", sku:"BOWL-02", yield:25, expectedUnits:25, price:149,
+          materials:[{id:uid(),name:"Chicken",qty:3,unit:"kg",unitCost:220},{id:uid(),name:"Rice",qty:3.5,unit:"kg",unitCost:55},{id:uid(),name:"Soy, vinegar & aromatics",qty:1,unit:"set",unitCost:160}],
+          packaging:[{id:uid(),name:"Bowl + lid",qty:1,unitCost:12},{id:uid(),name:"Spork + napkin",qty:1,unitCost:3}] },
+        { id:"p3", name:"Ube Cheese Pandesal (6pc)", sku:"BREAD-01", yield:30, expectedUnits:30, price:119,
+          materials:[{id:uid(),name:"Flour",qty:5,unit:"kg",unitCost:60},{id:uid(),name:"Ube halaya",qty:2,unit:"kg",unitCost:180},{id:uid(),name:"Cheese",qty:1.5,unit:"kg",unitCost:320},{id:uid(),name:"Butter, sugar, yeast",qty:1,unit:"set",unitCost:250}],
+          packaging:[{id:uid(),name:"Paper bag",qty:1,unitCost:4},{id:uid(),name:"Sticker",qty:1,unitCost:1}] }
+      ]},
+    { id:"t2", name:"Crafts", targetPct:40, period:"day", allocMethod:"units", activeId:"c1",
+      overhead:[
+        {id:uid(),name:"Booth rent",amount:400},
+        {id:uid(),name:"Electricity",amount:100},
+        {id:uid(),name:"Tools depreciation",amount:150},
+        {id:uid(),name:"Transport",amount:250}],
+      products:[
+        { id:"c1", name:"Resin Keychain", sku:"KEY-01", yield:30, expectedUnits:30, price:120,
+          materials:[{id:uid(),name:"Epoxy resin",qty:1,unit:"L",unitCost:900},{id:uid(),name:"Molds & pigments",qty:1,unit:"set",unitCost:250},{id:uid(),name:"Keyring hardware",qty:30,unit:"pcs",unitCost:6}],
+          packaging:[{id:uid(),name:"Polybag",qty:1,unitCost:2},{id:uid(),name:"Backing card",qty:1,unitCost:3}] },
+        { id:"c2", name:"Beaded Bracelet", sku:"BRA-01", yield:40, expectedUnits:40, price:80,
+          materials:[{id:uid(),name:"Beads",qty:1,unit:"pack",unitCost:600},{id:uid(),name:"Elastic cord",qty:1,unit:"roll",unitCost:120},{id:uid(),name:"Charms",qty:40,unit:"pcs",unitCost:5}],
+          packaging:[{id:uid(),name:"Polybag",qty:1,unitCost:2}] },
+        { id:"c3", name:"Scented Soy Candle", sku:"CAN-01", yield:24, expectedUnits:20, price:189,
+          materials:[{id:uid(),name:"Soy wax",qty:5,unit:"kg",unitCost:180},{id:uid(),name:"Fragrance oil",qty:0.5,unit:"L",unitCost:950},{id:uid(),name:"Wick",qty:24,unit:"pcs",unitCost:4},{id:uid(),name:"Tin container",qty:24,unit:"pcs",unitCost:35}],
+          packaging:[{id:uid(),name:"Gift box",qty:1,unitCost:12},{id:uid(),name:"Label",qty:1,unitCost:2}] }
+      ]}
+  ]};
+}
+function normProduct(p){ p.id=p.id||uid(); p.materials=p.materials||p.ingredients||[]; p.materials.forEach(i=> i.id=i.id||uid());
+  p.packaging=p.packaging||[]; p.packaging.forEach(i=> i.id=i.id||uid());
+  if(p.yield==null) p.yield=(p.quantity!=null?p.quantity:1); if(p.expectedUnits==null) p.expectedUnits=(p.quantity!=null?p.quantity:0); if(p.price==null) p.price=0; p.web=p.web||{show:true,desc:"",img:""}; return p; }
+function normType(t){ t.id=t.id||uid(); t.name=t.name||"Type";
+  t.targetPct=t.targetPct||33; t.period=t.period||"day"; t.allocMethod=t.allocMethod||"units";
+  t.overhead=Array.isArray(t.overhead)?t.overhead:(Array.isArray(t.dayCosts)?t.dayCosts:[]); t.overhead.forEach(d=> d.id=d.id||uid());
+  t.products=Array.isArray(t.products)&&t.products.length?t.products:[emptyProduct("Product A")]; t.products.forEach(normProduct);
+  if(!t.products.find(p=>p.id===t.activeId)) t.activeId=t.products[0].id; return t; }
+function normalise(s){
+  s.company=s.company||""; s.currency=s.currency||"PHP"; s.tagline=s.tagline||""; s.orderLink=s.orderLink||{label:"",url:""};
+  if(!Array.isArray(s.types)){
+    // upgrade a flat (v4) or older file into a single type
+    if(Array.isArray(s.products)){ s.types=[normType({name:s.company||"Type 1",targetPct:s.targetPct,period:s.period,allocMethod:s.allocMethod,overhead:s.overhead||s.dayCosts,products:s.products})]; }
+    else if(s.meta&&Array.isArray(s.materials)){ s.types=[normType({name:"Type 1",products:[{name:s.meta.name,sku:s.meta.sku,quantity:s.meta.quantity,materials:s.materials}]})]; }
+    else s.types=[emptyType("Type 1")];
+    delete s.products; delete s.overhead; delete s.dayCosts;
+  }
+  s.types.forEach(normType);
+  if(!s.types.find(t=>t.id===s.activeTypeId)) s.activeTypeId=s.types[0].id;
+  return s;
+}
+
+let state = normalise(sampleState());
+let currentTab = "materials";
+const at = () => state.types.find(t=>t.id===state.activeTypeId) || state.types[0];
+const active = () => { const t=at(); return t.products.find(p=>p.id===t.activeId) || t.products[0]; };
+
+const numv = v => { const n=parseFloat(v); return isFinite(n)?n:0; };
+const byId = id => document.getElementById(id);
+const setText = (id,t)=>{ const el=byId(id); if(el) el.textContent=t; };
+const setAll = (cls,t)=>{ document.querySelectorAll("."+cls).forEach(e=> e.textContent=t); };
+const esc = s => String(s??"").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+const pct = n => (isFinite(n)?n:0).toFixed(1)+"%";
+function fmt(n){ if(!isFinite(n)) n=0; try{ return new Intl.NumberFormat(undefined,{style:"currency",currency:state.currency}).format(n);}catch(e){return n.toFixed(2);} }
+function flash(id,t){ const el=byId(id); if(!el) return; if(el.textContent!==t){ el.textContent=t; el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); } }
+
+/* ---------- auto-save ---------- */
+const STORE_KEY="productCostSheet.v5";
+let storageOK=(function(){try{localStorage.setItem("__pcs_t","1");localStorage.removeItem("__pcs_t");return true;}catch(e){return false;}})();
+let saveTimer=null,statusTimer=null;
+function persist(){ if(!storageOK) return; clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{ try{ localStorage.setItem(STORE_KEY,JSON.stringify(state)); showSaved(); }catch(e){ storageOK=false; initSaveStatus(); } },400); }
+function loadSaved(){ if(!storageOK) return null; try{ const raw=localStorage.getItem(STORE_KEY); return raw?normalise(JSON.parse(raw)):null; }catch(e){ return null; } }
+function initSaveStatus(){ const el=byId("saveStatus"); if(!el) return; el.textContent=storageOK?"Auto-saves to this browser":"Auto-save off here — use Save JSON"; }
+function showSaved(){ const el=byId("saveStatus"); if(!el) return; el.textContent="Saved ✓"; clearTimeout(statusTimer); statusTimer=setTimeout(initSaveStatus,1400); }
+
+/* ---------- calculations ---------- */
+function directOf(p){
+  const matBatch=p.materials.reduce((s,i)=> s+numv(i.qty)*numv(i.unitCost),0);
+  const yieldN=Math.max(0,numv(p.yield));
+  const matUnit=yieldN>0?matBatch/yieldN:0;
+  const packUnit=p.packaging.reduce((s,i)=> s+numv(i.qty)*numv(i.unitCost),0);
+  const directUnit=matUnit+packUnit;
+  return {matBatch,yieldN,matUnit,packUnit,directUnit,price:numv(p.price),expected:Math.max(0,numv(p.expectedUnits))};
+}
+function bizOf(t){
+  const O=t.overhead.reduce((s,d)=> s+numv(d.amount),0);
+  let totalUnits=0,totalRev=0,totalDirect=0;
+  t.products.forEach(p=>{ const d=directOf(p); totalUnits+=d.expected; totalRev+=d.price*d.expected; totalDirect+=d.directUnit*d.expected; });
+  const contribution=totalRev-totalDirect, profit=contribution-O;
+  const blended=totalUnits>0?contribution/totalUnits:0;
+  const beUnits=blended>0?O/blended:0;
+  const ratio=totalRev>0?contribution/totalRev:0;
+  const beRevenue=ratio>0?O/ratio:0;
+  return {O,totalUnits,totalRev,totalDirect,contribution,profit,blended,beUnits,beRevenue};
+}
+function ohPerUnit(p,t,b){
+  b=b||bizOf(t); const m=t.allocMethod; if(m==="none") return 0; const d=directOf(p);
+  if(m==="units") return b.totalUnits>0?b.O/b.totalUnits:0;
+  if(m==="revenue"){ const rev=d.price*d.expected; return (b.totalRev>0&&d.expected>0)?(b.O*(rev/b.totalRev))/d.expected:0; }
+  if(m==="perProduct"){ const N=t.products.length||1; return d.expected>0?(b.O/N)/d.expected:0; }
+  return 0;
+}
+function full(p,t,b){ b=b||bizOf(t); const d=directOf(p); const oh=ohPerUnit(p,t,b); const total=d.directUnit+oh;
+  const costPct=d.price>0?d.directUnit/d.price*100:0; const profitUnit=d.price-total;
+  return Object.assign({},d,{oh,total,costPct,profitUnit}); }
+
+/* ---------- row builders ---------- */
+const matRow = i => `<tr data-id="${i.id}">
+  <td><input class="cell-input" data-sec="materials" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="e.g. Rice"></td>
+  <td class="num qty-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="materials" data-field="qty" data-id="${i.id}" value="${i.qty}"></td>
+  <td class="unit-cell"><input class="cell-input" list="units" data-sec="materials" data-field="unit" data-id="${i.id}" value="${esc(i.unit)}" placeholder="unit"></td>
+  <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="materials" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>
+  <td class="num line" data-line="materials" data-id="${i.id}">—</td>
+  <td class="rm"><button class="rm-btn" data-remove="materials" data-id="${i.id}" aria-label="Remove">×</button></td></tr>`;
+const packRow = i => `<tr data-id="${i.id}">
+  <td><input class="cell-input" data-sec="packaging" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="e.g. Box + lid"></td>
+  <td class="num qty-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="packaging" data-field="qty" data-id="${i.id}" value="${i.qty}"></td>
+  <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="packaging" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>
+  <td class="num line" data-line="packaging" data-id="${i.id}">—</td>
+  <td class="rm"><button class="rm-btn" data-remove="packaging" data-id="${i.id}" aria-label="Remove">×</button></td></tr>`;
+const ovRow = d => `<tr data-id="${d.id}">
+  <td><input class="cell-input" data-sec="overhead" data-field="name" data-id="${d.id}" value="${esc(d.name)}" placeholder="e.g. Electricity"></td>
+  <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="overhead" data-field="amount" data-id="${d.id}" value="${d.amount}"></td>
+  <td class="rm"><button class="rm-btn" data-remove="overhead" data-id="${d.id}" aria-label="Remove">×</button></td></tr>`;
+
+/* ---------- bars ---------- */
+function renderTypeBar(){
+  const bar=byId("typebar"); bar.querySelectorAll(".chip,.chip-add").forEach(n=>n.remove());
+  const lbl=bar.querySelector(".cblabel");
+  state.types.forEach(t=>{ const chip=document.createElement("button");
+    chip.className="chip type-chip"; chip.dataset.switchtype=t.id; chip.setAttribute("aria-current",t.id===state.activeTypeId);
+    chip.innerHTML=`<span>${esc(t.name)||"Untitled"}</span><span class="cu">${t.products.length}</span>`;
+    lbl.after(chip); });
+  const add=document.createElement("button"); add.className="chip-add"; add.dataset.action="newType"; add.textContent="+ New type";
+  // place add right after last chip (before spacer)
+  const spacer=bar.querySelector(".spacer"); bar.insertBefore(add, spacer);
+}
+function renderProductBar(){
+  const bar=byId("prodbar"); bar.querySelectorAll(".chip,.chip-add").forEach(n=>n.remove());
+  const t=at(), b=bizOf(t);
+  t.products.forEach(p=>{ const f=full(p,t,b); const chip=document.createElement("button");
+    chip.className="chip prod-chip"; chip.dataset.switch=p.id; chip.setAttribute("aria-current",p.id===t.activeId);
+    chip.innerHTML=`<span>${esc(p.name)||"Untitled"}</span><span class="cu">${fmt(f.total)}</span>`; bar.appendChild(chip); });
+  const add=document.createElement("button"); add.className="chip-add"; add.dataset.action="newProduct"; add.textContent="+ New product"; bar.appendChild(add);
+}
+
+/* ---------- render ---------- */
+function render(){
+  const t=at();
+  byId("companyName").value=state.company; byId("pCur").value=state.currency;
+  byId("typeName").value=t.name;
+  byId("targetPct").value=t.targetPct; byId("period").value=t.period; byId("allocMethod").value=t.allocMethod;
+  setAll("periodlbl", t.period||"day");
+  const p=active();
+  byId("pName").value=p.name; byId("pSku").value=p.sku; byId("pYield").value=p.yield;
+  byId("pPrice").value=p.price; byId("pExpected").value=p.expectedUnits;
+  byId("webShow").checked=!!(p.web&&p.web.show); byId("webDesc").value=(p.web&&p.web.desc)||""; byId("webImg").value=(p.web&&p.web.img)||"";
+  byId("tagline").value=state.tagline||""; byId("orderLabel").value=state.orderLink.label||""; byId("orderUrl").value=state.orderLink.url||"";
+  byId("matBody").innerHTML=p.materials.length?p.materials.map(matRow).join(""):`<tr><td colspan="6" class="empty">No materials yet — add one below.</td></tr>`;
+  byId("packBody").innerHTML=p.packaging.length?p.packaging.map(packRow).join(""):`<tr><td colspan="5" class="empty">No packaging yet — add one below.</td></tr>`;
+  byId("ovBody").innerHTML=t.overhead.length?t.overhead.map(ovRow).join(""):`<tr><td colspan="3" class="empty">No overhead yet — add one below.</td></tr>`;
+  byId("suHead").textContent = (t.name||"Type")+" summary";
+  renderTypeBar(); renderProductBar(); recompute();
+}
+
+/* ---------- recompute ---------- */
+function recompute(){
+  const t=at(), b=bizOf(t), p=active(), f=full(p,t,b);
+  p.materials.forEach(i=>{ const cell=document.querySelector(`[data-line="materials"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(numv(i.qty)*numv(i.unitCost)); });
+  p.packaging.forEach(i=>{ const cell=document.querySelector(`[data-line="packaging"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(numv(i.qty)*numv(i.unitCost)); });
+
+  setText("matBatch",fmt(f.matBatch)); setText("matUnit",fmt(f.matUnit)); setText("packUnit",fmt(f.packUnit)); setText("directUnit",fmt(f.directUnit));
+  setText("directBreakdown",`${fmt(f.matUnit)} materials + ${fmt(f.packUnit)} packaging · batch of ${f.yieldN||0}`);
+
+  setText("heroCost",fmt(f.total));
+  let hsub;
+  if(f.oh>0) hsub=`${fmt(f.directUnit)} direct + ${fmt(f.oh)} overhead`;
+  else if(f.price>0) hsub=`Direct cost ${pct(f.costPct)} · sells at ${fmt(f.price)}`;
+  else hsub="Add price & expected units";
+  setText("heroSub",hsub);
+
+  setText("tProd",p.name||"Untitled"); setText("tDirect",fmt(f.directUnit)); setText("tOh",fmt(f.oh));
+  flash("tTotal",fmt(f.total)); setText("tProfit", f.price>0?fmt(f.profitUnit):"—");
+
+  const target=Math.max(1,numv(t.targetPct));
+  setText("prDirect",fmt(f.directUnit)); setText("prOh",fmt(f.oh)); setText("prTotal",fmt(f.total));
+  setText("prOhSub", t.allocMethod==="none"?"not allocated":"allocated "+t.allocMethod);
+  setText("prPct", f.price>0?pct(f.costPct):"—");
+  const pctTile=byId("prPctTile"); pctTile.classList.remove("good","bad");
+  if(f.price>0){ pctTile.classList.add(f.costPct<=target?"good":"bad"); setText("prPctSub", f.costPct<=target?`within ${target}% target`:`over ${target}% target`);} else setText("prPctSub","set a price");
+  setText("prProfit", f.price>0?fmt(f.profitUnit):"—");
+  const ppt=byId("prProfitTile"); ppt.classList.remove("bad"); if(f.price>0&&f.profitUnit<0) ppt.classList.add("bad");
+  const suggest=f.directUnit/(target/100);
+  setText("prSuggest", f.directUnit>0?fmt(suggest):"—"); setText("prSuggestSub",`at ${target}% direct cost`);
+  let note;
+  if(f.price<=0) note=`Enter a selling price to check profitability. Pricing around <strong>${fmt(suggest)}</strong> puts direct cost at ${target}%. Overhead of <strong>${fmt(f.oh)}</strong>/unit is on top.`;
+  else if(f.profitUnit<0) note=`Warning: at ${fmt(f.price)} you lose <strong>${fmt(-f.profitUnit)}</strong> per unit once overhead is included. Raise the price or cut cost.`;
+  else note=`At ${fmt(f.price)}: direct cost ${pct(f.costPct)}, plus <strong>${fmt(f.oh)}</strong> overhead per unit, leaves <strong>${fmt(f.profitUnit)}</strong> profit per unit.`;
+  byId("pricingNote").innerHTML=note;
+
+  const chip=document.querySelector(`.prod-chip[data-switch="${p.id}"] .cu`); if(chip) chip.textContent=fmt(f.total);
+  const chipName=document.querySelector(`.prod-chip[data-switch="${p.id}"] span:first-child`); if(chipName) chipName.textContent=p.name||"Untitled";
+  const typeChipName=document.querySelector(`.type-chip[data-switchtype="${t.id}"] span:first-child`); if(typeChipName) typeChipName.textContent=t.name||"Untitled";
+
+  setText("ovTotal",fmt(b.O));
+  let spread;
+  if(t.allocMethod==="none") spread="Not allocated — overhead is covered via break-even in the Summary tab.";
+  else if(b.totalUnits<=0) spread="Set expected units on this type’s products so overhead can be spread.";
+  else if(t.allocMethod==="units") spread=`Spread ≈ ${fmt(b.O/b.totalUnits)} / unit across ${b.totalUnits.toLocaleString()} expected units.`;
+  else if(t.allocMethod==="revenue") spread=`Spread across products by their share of revenue.`;
+  else spread=`Split evenly across ${t.products.length} product(s), then per unit.`;
+  setText("ovSpread",spread);
+
+  if(currentTab==="summary") renderSummary(t,b);
+  persist();
+}
+
+/* ---------- summary ---------- */
+function renderSummary(t,b){
+  t=t||at(); b=b||bizOf(t);
+  setText("suOh",fmt(b.O)); setText("suRev",fmt(b.totalRev)); setText("suCost",fmt(b.totalDirect+b.O)); setText("suProfit",fmt(b.profit));
+  byId("suProfitTile").classList.toggle("profit", b.profit>=0); byId("suProfitTile").classList.toggle("bad", b.profit<0);
+  const target=numv(t.targetPct);
+  const rows=t.products.map(p=>{ const f=full(p,t,b); const bad=f.price>0&&f.costPct>target;
+    return `<tr data-open="${p.id}">
+      <td>${esc(p.name)||"Untitled"} ${p.sku?`<span class="psku">${esc(p.sku)}</span>`:""}</td>
+      <td>${fmt(f.directUnit)}</td><td>${fmt(f.oh)}</td><td>${fmt(f.total)}</td>
+      <td>${f.price>0?fmt(f.price):"—"}</td>
+      <td class="pctcell ${f.price>0?(bad?"bad":"good"):""}">${f.price>0?pct(f.costPct):"—"}</td>
+      <td class="profitcell ${f.price>0?(f.profitUnit<0?"bad":"good"):""}">${f.price>0?fmt(f.profitUnit):"—"}</td>
+      <td>${f.expected.toLocaleString()}</td>
+      <td class="profitcell ${(f.profitUnit*f.expected)<0?"bad":""}">${fmt(f.profitUnit*f.expected)}</td></tr>`; }).join("");
+  byId("allBody").innerHTML=rows||`<tr><td colspan="9" class="empty">No products.</td></tr>`;
+  const dpct=b.totalRev>0?b.totalDirect/b.totalRev*100:0;
+  setText("afPct", b.totalRev>0?pct(dpct):"—"); setText("afUnits",b.totalUnits.toLocaleString()); setText("afProfit",fmt(b.profit));
+  let st;
+  if(b.O<=0) st=`Add overhead for this type to see break-even. At expected volume you’d make <strong>${fmt(b.contribution)}</strong> before overhead per ${t.period}.`;
+  else if(b.blended<=0) st=`Set prices above cost so each sale contributes, then break-even shows here.`;
+  else st=`This type needs about <strong>${Math.ceil(b.beUnits).toLocaleString()} sales</strong> (≈ <strong>${fmt(b.beRevenue)}</strong>) to cover <strong>${fmt(b.O)}</strong> overhead per ${t.period}. You expect <strong>${b.totalUnits.toLocaleString()}</strong> — projected profit <strong>${fmt(b.profit)}</strong> per ${t.period}.`;
+  byId("suStatement").innerHTML=st;
+
+  // whole-business roll-up across all types
+  if(state.types.length>1){
+    let cRev=0,cProfit=0; const parts=state.types.map(tt=>{ const bb=bizOf(tt); cRev+=bb.totalRev; cProfit+=bb.profit; return `${esc(tt.name)}: ${fmt(bb.profit)}`; });
+    byId("companyRoll").style.display="";
+    byId("companyRoll").innerHTML=`<strong>Whole business</strong> — projected profit ${fmt(cProfit)} across all types (${parts.join(" · ")}), on ${fmt(cRev)} sales.`;
+  } else byId("companyRoll").style.display="none";
+}
+
+/* ---------- tabs & switching ---------- */
+function switchTab(name){ currentTab=name;
+  document.querySelectorAll(".tab").forEach(b=> b.setAttribute("aria-selected",b.dataset.tab===name));
+  document.querySelectorAll(".panel").forEach(p=> p.classList.toggle("active",p.id==="tab-"+name));
+  document.body.classList.toggle("biz-mode", name==="overhead"||name==="summary");
+  if(name==="summary") renderSummary(); }
+function switchType(id){ if(!state.types.find(t=>t.id===id)) return; state.activeTypeId=id; render();
+  document.querySelectorAll(".type-chip").forEach(c=> c.setAttribute("aria-current",c.dataset.switchtype===id)); }
+function switchProduct(id){ const t=at(); if(!t.products.find(p=>p.id===id)) return; t.activeId=id; render();
+  document.querySelectorAll(".prod-chip").forEach(c=> c.setAttribute("aria-current",c.dataset.switch===id)); }
+
+/* ---------- events ---------- */
+function onInput(e){
+  const el=e.target, id=el.id, t=at(), p=active();
+  if(id==="companyName"){ state.company=el.value; persist(); return; }
+  if(id==="webShow"){ p.web.show=el.checked; persist(); return; }
+  if(id==="webDesc"){ p.web.desc=el.value; persist(); return; }
+  if(id==="webImg"){ p.web.img=el.value; persist(); return; }
+  if(id==="tagline"){ state.tagline=el.value; persist(); return; }
+  if(id==="orderLabel"){ state.orderLink.label=el.value; persist(); return; }
+  if(id==="orderUrl"){ state.orderLink.url=el.value; persist(); return; }
+  if(id==="typeName"){ t.name=el.value; const c=document.querySelector(`.type-chip[data-switchtype="${t.id}"] span:first-child`); if(c) c.textContent=el.value||"Untitled"; byId("suHead").textContent=(el.value||"Type")+" summary"; persist(); return; }
+  if(id==="pCur"){ state.currency=el.value; renderTypeBar(); renderProductBar(); recompute(); return; }
+  if(id==="targetPct"){ t.targetPct=el.value; recompute(); return; }
+  if(id==="period"){ t.period=el.value; setAll("periodlbl", el.value||"day"); recompute(); return; }
+  if(id==="allocMethod"){ t.allocMethod=el.value; renderProductBar(); recompute(); return; }
+  if(id==="pName"){ p.name=el.value; recompute(); return; }
+  if(id==="pSku"){ p.sku=el.value; if(currentTab==="summary") renderSummary(); persist(); return; }
+  if(id==="pYield"){ p.yield=el.value; renderProductBar(); recompute(); return; }
+  if(id==="pPrice"){ p.price=el.value; renderProductBar(); recompute(); return; }
+  if(id==="pExpected"){ p.expectedUnits=el.value; renderProductBar(); recompute(); return; }
+  const sec=el.dataset.sec, field=el.dataset.field, rid=el.dataset.id;
+  if(sec&&field&&rid){ const arr = sec==="overhead"?t.overhead:p[sec]; const row=arr.find(r=>r.id===rid);
+    if(row){ row[field]=el.value; renderProductBar(); recompute(); } }
+}
+function onClick(e){
+  if(e.target.id==="pubModal"){ byId("pubModal").style.display="none"; return; }
+  const st=e.target.closest(".type-chip"); if(st){ switchType(st.dataset.switchtype); return; }
+  const sw=e.target.closest(".prod-chip"); if(sw){ switchProduct(sw.dataset.switch); if(currentTab==="overhead"||currentTab==="summary") switchTab("materials"); return; }
+  const openRow=e.target.closest("tr[data-open]"); if(openRow){ switchProduct(openRow.dataset.open); switchTab("materials"); return; }
+  const btn=e.target.closest("button"); if(!btn) return;
+  if(btn.dataset.tab){ switchTab(btn.dataset.tab); return; }
+  if(btn.dataset.add){ const sec=btn.dataset.add, t=at(), p=active();
+    if(sec==="materials"){ p.materials.push({id:uid(),name:"",qty:0,unit:"g",unitCost:0}); byId("matBody").innerHTML=p.materials.map(matRow).join(""); }
+    if(sec==="packaging"){ p.packaging.push({id:uid(),name:"",qty:1,unitCost:0}); byId("packBody").innerHTML=p.packaging.map(packRow).join(""); }
+    if(sec==="overhead"){ t.overhead.push({id:uid(),name:"",amount:0}); byId("ovBody").innerHTML=t.overhead.map(ovRow).join(""); }
+    recompute();
+    const body=sec==="materials"?"matBody":sec==="packaging"?"packBody":"ovBody";
+    const last=byId(body).querySelector("tr:last-child input"); if(last) last.focus(); return; }
+  if(btn.dataset.remove){ const sec=btn.dataset.remove, rid=btn.dataset.id, t=at(), p=active();
+    if(sec==="overhead") t.overhead=t.overhead.filter(r=>r.id!==rid); else p[sec]=p[sec].filter(r=>r.id!==rid);
+    render(); switchTab(currentTab); return; }
+  if(btn.dataset.action){ handleAction(btn.dataset.action); return; }
+}
+function reassignIds(p){ p.id=uid(); p.materials.forEach(i=>i.id=uid()); p.packaging.forEach(i=>i.id=uid()); return p; }
+function reassignType(t){ t.id=uid(); t.overhead.forEach(d=>d.id=uid()); t.products.forEach(reassignIds); t.activeId=t.products[0]?t.products[0].id:""; return t; }
+function handleAction(a){
+  const t=at();
+  if(a==="newType"){ const nt=emptyType("Type "+(state.types.length+1)); state.types.push(nt); switchType(nt.id); switchTab("overhead"); byId("typeName").focus(); byId("typeName").select(); }
+  else if(a==="duplicateType"){ const copy=reassignType(JSON.parse(JSON.stringify(t))); copy.name=(t.name||"Untitled")+" (copy)"; const idx=state.types.findIndex(x=>x.id===state.activeTypeId); state.types.splice(idx+1,0,copy); switchType(copy.id); }
+  else if(a==="deleteType"){ if(state.types.length<=1){ alert("You need at least one business type."); return; } if(confirm(`Delete the “${t.name||"Untitled"}” type and all its products?`)){ const idx=state.types.findIndex(x=>x.id===state.activeTypeId); state.types.splice(idx,1); state.activeTypeId=state.types[Math.max(0,idx-1)].id; render(); switchTab(currentTab); } }
+  else if(a==="newProduct"){ const np=emptyProduct("Product "+String.fromCharCode(65+t.products.length)); t.products.push(np); switchProduct(np.id); switchTab("materials"); byId("pName").focus(); byId("pName").select(); }
+  else if(a==="duplicate"){ const copy=reassignIds(JSON.parse(JSON.stringify(active()))); copy.name=(active().name||"Untitled")+" (copy)"; const idx=t.products.findIndex(p=>p.id===t.activeId); t.products.splice(idx+1,0,copy); switchProduct(copy.id); }
+  else if(a==="deleteProduct"){ if(t.products.length<=1){ alert("You need at least one product in a type."); return; } if(confirm(`Delete “${active().name||"Untitled"}”?`)){ const idx=t.products.findIndex(p=>p.id===t.activeId); t.products.splice(idx,1); t.activeId=t.products[Math.max(0,idx-1)].id; render(); switchTab(currentTab); } }
+  else if(a==="sample"){ if(confirm("Replace everything with the sample business?")){ state=normalise(sampleState()); render(); switchTab(currentTab); } }
+  else if(a==="clear"){ if(confirm("Reset to a blank business with one type and one product?")){ state=normalise({company:"",currency:state.currency,types:[emptyType("Type 1")]}); render(); switchTab("materials"); } }
+  else if(a==="import"){ byId("fileInput").click(); }
+  else if(a==="publish"){ byId("pubModal").style.display="flex"; }
+  else if(a==="closePublish"){ byId("pubModal").style.display="none"; }
+  else if(a==="downloadCatalog"){ downloadCatalog(); }
+  else if(a==="csv"){ downloadCSV(); }
+  else if(a==="json"){ downloadJSON(); }
+  else if(a==="print"){ buildPrint(); window.print(); }
+}
+
+/* ---------- export / import ---------- */
+function download(fn,txt,type){ const b=new Blob([txt],{type}),u=URL.createObjectURL(b),a=document.createElement("a"); a.href=u; a.download=fn; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u); }
+const slug = s => (s||"business").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"business";
+function downloadJSON(){ download(slug(state.company)+"-costing.json", JSON.stringify(state,null,2), "application/json"); }
+function buildCatalog(){
+  return { business:state.company, tagline:state.tagline||"", currency:state.currency, order:state.orderLink||{label:"",url:""},
+    generatedAt:new Date().toISOString(),
+    types: state.types.map(t=>({ name:t.name,
+      products: t.products.filter(p=> p.web && p.web.show && numv(p.price)>0)
+        .map(p=>({ name:p.name, price:numv(p.price), description:(p.web.desc||""), image:(p.web.img||"") }))
+    })).filter(t=> t.products.length) };
+}
+function downloadCatalog(){ download("catalog.json", JSON.stringify(buildCatalog(),null,2), "application/json"); byId("pubModal").style.display="none"; }
+function csvCell(v){ const s=String(v??""); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+function downloadCSV(){
+  const L=[],row=(...a)=>L.push(a.map(csvCell).join(","));
+  row("Business",state.company); row("Currency",state.currency); row("Generated",new Date().toISOString().slice(0,10)); row("");
+  state.types.forEach(t=>{ const b=bizOf(t);
+    row("================ TYPE: "+(t.name||"Untitled")+" ================");
+    row("Target cost %",t.targetPct); row("Period",t.period); row("Overhead spread",t.allocMethod); row("");
+    row("Overhead (shared in type)"); row("Cost","Amount/"+t.period); t.overhead.forEach(d=> row(d.name,d.amount)); row("Total overhead","",b.O); row("");
+    row("Summary"); row("Product","Code","Direct/unit","Overhead/unit","Total/unit","Price","Cost %","Profit/unit","Expected","Proj. profit");
+    t.products.forEach(p=>{ const f=full(p,t,b); row(p.name,p.sku,f.directUnit.toFixed(2),f.oh.toFixed(2),f.total.toFixed(2),f.price,f.price>0?f.costPct.toFixed(1):"",f.profitUnit.toFixed(2),f.expected,(f.profitUnit*f.expected).toFixed(2)); });
+    row("Projected sales/"+t.period,b.totalRev.toFixed(2)); row("Projected profit/"+t.period,b.profit.toFixed(2)); row("Break-even (units)",Math.ceil(b.beUnits)); row("Break-even (value)",b.beRevenue.toFixed(2)); row("");
+    t.products.forEach(p=>{ const f=full(p,t,b);
+      row("Product: "+(p.name||"Untitled")); row("Units per batch",p.yield);
+      row("Materials (per batch)"); row("Material","Qty","Unit","Unit cost","Line");
+      p.materials.forEach(i=> row(i.name,i.qty,i.unit,i.unitCost,(numv(i.qty)*numv(i.unitCost)).toFixed(2)));
+      row("Packaging (per unit)"); row("Item","Qty","Cost each","Line");
+      p.packaging.forEach(i=> row(i.name,i.qty,i.unitCost,(numv(i.qty)*numv(i.unitCost)).toFixed(2)));
+      row("Direct cost/unit","","",f.directUnit.toFixed(2)); row("Overhead/unit","","",f.oh.toFixed(2)); row("Total cost/unit","","",f.total.toFixed(2)); row("Selling price",f.price); row("");
+    });
+  });
+  download(slug(state.company)+"-costing.csv", L.join("\n"), "text/csv");
+}
+function importJSON(file){ const r=new FileReader();
+  r.onload=()=>{ try{ let d=JSON.parse(r.result);
+    if(d.types||d.products||(d.meta&&Array.isArray(d.materials))) state=normalise(d); else throw new Error("shape");
+    render(); switchTab(currentTab);
+  }catch(e){ alert("That file doesn't look like a saved cost sheet."); } };
+  r.readAsText(file); }
+
+/* ---------- print (active product) ---------- */
+function buildPrint(){
+  const t=at(), b=bizOf(t), p=active(), f=full(p,t,b), money=fmt;
+  const mat=p.materials.map(i=>`<tr><td>${esc(i.name)||"—"}</td><td class="pnum">${i.qty}</td><td>${esc(i.unit)}</td><td class="pnum">${money(numv(i.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(i.unitCost))}</td></tr>`).join("");
+  const pack=p.packaging.map(i=>`<tr><td>${esc(i.name)||"—"}</td><td class="pnum">${i.qty}</td><td class="pnum">${money(numv(i.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(i.unitCost))}</td></tr>`).join("");
+  byId("printArea").innerHTML=`
+    ${state.company?`<div class="pcompany">${esc(state.company)} · ${esc(t.name)}</div>`:`<div class="pcompany">${esc(t.name)}</div>`}
+    <h1>${esc(p.name)||"Product cost sheet"}</h1>
+    <div class="pmeta">${esc(p.sku)?esc(p.sku)+" · ":""}batch makes ${p.yield} units · ${state.currency}</div>
+    <div class="psec">Materials (per batch)</div>
+    <table><thead><tr><th>Material</th><th class="pnum">Qty</th><th>Unit</th><th class="pnum">Unit cost</th><th class="pnum">Line</th></tr></thead>
+    <tbody>${mat}<tr class="ptotal"><td colspan="4">Batch material cost</td><td class="pnum">${money(f.matBatch)}</td></tr>
+    <tr class="ptotal"><td colspan="4">Material cost / unit</td><td class="pnum">${money(f.matUnit)}</td></tr></tbody></table>
+    <div class="psec">Packaging (per unit)</div>
+    <table><thead><tr><th>Item</th><th class="pnum">Qty</th><th class="pnum">Cost each</th><th class="pnum">Line</th></tr></thead>
+    <tbody>${pack}<tr class="ptotal"><td colspan="3">Packaging / unit</td><td class="pnum">${money(f.packUnit)}</td></tr></tbody></table>
+    <div class="psec">Cost &amp; price</div>
+    <table><tbody>
+      <tr><td>Direct cost / unit</td><td class="pnum">${money(f.directUnit)}</td></tr>
+      <tr><td>Overhead / unit (${t.allocMethod})</td><td class="pnum">${money(f.oh)}</td></tr>
+      <tr class="ptotal"><td>Total cost / unit</td><td class="pnum">${money(f.total)}</td></tr>
+      <tr><td>Selling price / unit</td><td class="pnum">${f.price>0?money(f.price):"—"}</td></tr>
+      <tr><td>Profit / unit</td><td class="pnum">${f.price>0?money(f.profitUnit):"—"}</td></tr>
+    </tbody></table>
+    <div class="psec">${esc(t.name)} — per ${t.period}</div>
+    <table><tbody>
+      <tr><td>Total overhead</td><td class="pnum">${money(b.O)}</td></tr>
+      <tr><td>Break-even sales</td><td class="pnum">${b.beUnits>0?Math.ceil(b.beUnits)+" units ≈ "+money(b.beRevenue):"—"}</td></tr>
+      <tr class="ptotal"><td>Projected profit</td><td class="pnum">${money(b.profit)}</td></tr>
+    </tbody></table>`;
+}
+
+/* ---------- init ---------- */
+document.body.addEventListener("input",onInput);
+document.body.addEventListener("change",onInput);
+document.body.addEventListener("click",onClick);
+byId("fileInput").addEventListener("change",e=>{ if(e.target.files[0]) importJSON(e.target.files[0]); e.target.value=""; });
+window.addEventListener("beforeprint",buildPrint);
+
+const saved=loadSaved(); if(saved) state=saved;
+initSaveStatus(); render(); switchTab("materials");
+</script>
+</body>
+</html>

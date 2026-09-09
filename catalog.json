@@ -1,0 +1,25 @@
+{
+  "business": "Northwind Ventures",
+  "tagline": "Handcrafted food & gifts, made fresh to order",
+  "currency": "PHP",
+  "order": { "label": "Order on Messenger", "url": "https://m.me/yourpage" },
+  "generatedAt": "2026-09-09T00:00:00.000Z",
+  "types": [
+    {
+      "name": "Foods",
+      "products": [
+        { "name": "Beef Tapa Rice Bowl", "price": 189, "description": "Sweet-savoury cured beef, garlic rice and a runny egg.", "image": "" },
+        { "name": "Chicken Adobo Bowl", "price": 149, "description": "Slow-braised chicken in soy and vinegar over steamed rice.", "image": "" },
+        { "name": "Ube Cheese Pandesal (6pc)", "price": 119, "description": "Soft rolls filled with ube halaya and a salty cheese ribbon.", "image": "" }
+      ]
+    },
+    {
+      "name": "Crafts",
+      "products": [
+        { "name": "Resin Keychain", "price": 120, "description": "Hand-poured resin charm, each one slightly different.", "image": "" },
+        { "name": "Beaded Bracelet", "price": 80, "description": "Adjustable beaded bracelet with a small charm.", "image": "" },
+        { "name": "Scented Soy Candle", "price": 189, "description": "Clean-burning soy candle in a reusable tin.", "image": "" }
+      ]
+    }
+  ]
+}
