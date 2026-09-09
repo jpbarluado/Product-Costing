@@ -160,6 +160,11 @@
   .modal .field input{width:100%}
   .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
   .modal code{background:var(--soft);padding:1px 5px;border-radius:4px;font-size:12px}
+  .modal h4{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:14px;margin:20px 0 6px}
+  .modal hr{border:none;border-top:1px solid var(--rule);margin:20px 0}
+  .modal a{color:var(--accent)}
+  .ghstatus{font-size:12.5px;color:var(--muted);margin-top:10px;min-height:16px}
+  .gh-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
   #printArea{display:none}
   @media print{
     body{background:#fff;padding:0}
@@ -394,8 +399,19 @@
   <div class="field"><label for="orderUrl">Order link — Messenger, WhatsApp (wa.me/63…), mailto: or any URL</label><input id="orderUrl" placeholder="https://m.me/yourpage"></div>
   <div class="modal-actions">
     <button class="btn" data-action="closePublish">Close</button>
-    <button class="btn primary" data-action="downloadCatalog">Download catalog.json</button>
+    <button class="btn" data-action="downloadCatalog">Download catalog.json</button>
   </div>
+  <hr>
+  <h4>Auto-publish to GitHub (optional)</h4>
+  <p>One click updates your live site — no download, no manual commit. Needs a GitHub token that can write to your repo. It’s stored only in this browser, never in your files or on the public page. Best: use a <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">fine-grained token</a> limited to this one repo, with <strong>Contents: Read and write</strong>.</p>
+  <div class="field"><label for="ghRepo">Repository (owner/name)</label><input id="ghRepo" placeholder="yourname/your-repo"></div>
+  <div class="field"><label for="ghBranch">Branch</label><input id="ghBranch" placeholder="main"></div>
+  <div class="field"><label for="ghToken">Access token</label><input id="ghToken" type="password" placeholder="github_pat_…"></div>
+  <div class="gh-actions">
+    <button class="btn primary" data-action="ghPublish">Publish to GitHub</button>
+    <button class="btn" data-action="ghForget">Forget token</button>
+  </div>
+  <div class="ghstatus" id="ghStatus"></div>
 </div></div>
 <input type="file" id="fileInput" accept="application/json,.json" style="display:none">
 
@@ -694,6 +710,9 @@ function onInput(e){
   if(id==="tagline"){ state.tagline=el.value; persist(); return; }
   if(id==="orderLabel"){ state.orderLink.label=el.value; persist(); return; }
   if(id==="orderUrl"){ state.orderLink.url=el.value; persist(); return; }
+  if(id==="ghRepo"){ ghCfg.repo=el.value; saveGh(); return; }
+  if(id==="ghBranch"){ ghCfg.branch=el.value; saveGh(); return; }
+  if(id==="ghToken"){ ghCfg.token=el.value; saveGh(); return; }
   if(id==="typeName"){ t.name=el.value; const c=document.querySelector(`.type-chip[data-switchtype="${t.id}"] span:first-child`); if(c) c.textContent=el.value||"Untitled"; byId("suHead").textContent=(el.value||"Type")+" summary"; persist(); return; }
   if(id==="pCur"){ state.currency=el.value; renderTypeBar(); renderProductBar(); recompute(); return; }
   if(id==="targetPct"){ t.targetPct=el.value; recompute(); return; }
@@ -740,9 +759,11 @@ function handleAction(a){
   else if(a==="sample"){ if(confirm("Replace everything with the sample business?")){ state=normalise(sampleState()); render(); switchTab(currentTab); } }
   else if(a==="clear"){ if(confirm("Reset to a blank business with one type and one product?")){ state=normalise({company:"",currency:state.currency,types:[emptyType("Type 1")]}); render(); switchTab("materials"); } }
   else if(a==="import"){ byId("fileInput").click(); }
-  else if(a==="publish"){ byId("pubModal").style.display="flex"; }
+  else if(a==="publish"){ byId("ghRepo").value=ghCfg.repo||""; byId("ghBranch").value=ghCfg.branch||"main"; byId("ghToken").value=ghCfg.token||""; byId("ghStatus").textContent=""; byId("pubModal").style.display="flex"; }
   else if(a==="closePublish"){ byId("pubModal").style.display="none"; }
   else if(a==="downloadCatalog"){ downloadCatalog(); }
+  else if(a==="ghPublish"){ publishToGitHub(); }
+  else if(a==="ghForget"){ ghCfg.token=""; saveGh(); byId("ghToken").value=""; byId("ghStatus").textContent="Token cleared from this browser."; }
   else if(a==="csv"){ downloadCSV(); }
   else if(a==="json"){ downloadJSON(); }
   else if(a==="print"){ buildPrint(); window.print(); }
@@ -761,6 +782,36 @@ function buildCatalog(){
     })).filter(t=> t.products.length) };
 }
 function downloadCatalog(){ download("catalog.json", JSON.stringify(buildCatalog(),null,2), "application/json"); byId("pubModal").style.display="none"; }
+
+/* ---- GitHub auto-publish (kept OUT of state so the token never enters exports) ---- */
+const GH_KEY="pcs_gh_v1";
+let ghCfg=(function(){ try{ return Object.assign({repo:"",branch:"main",token:""}, JSON.parse(localStorage.getItem(GH_KEY)||"{}")); }catch(e){ return {repo:"",branch:"main",token:""}; } })();
+function saveGh(){ try{ localStorage.setItem(GH_KEY, JSON.stringify(ghCfg)); }catch(e){} }
+async function publishToGitHub(){
+  const status=byId("ghStatus");
+  const repo=(ghCfg.repo||"").trim(), token=(ghCfg.token||"").trim(), branch=(ghCfg.branch||"main").trim()||"main";
+  if(!repo||!token){ status.textContent="Enter the repository and token first."; return; }
+  const parts=repo.split("/").map(s=>s.trim()).filter(Boolean);
+  if(parts.length!==2){ status.textContent="Repository must be in the form owner/name."; return; }
+  const [owner,name]=parts, path="catalog.json";
+  const json=JSON.stringify(buildCatalog(),null,2);
+  let content; try{ content=btoa(unescape(encodeURIComponent(json))); }catch(e){ status.textContent="Could not encode catalog."; return; }
+  const base="https://api.github.com/repos/"+owner+"/"+name+"/contents/"+path;
+  const headers={Authorization:"Bearer "+token, Accept:"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28"};
+  status.textContent="Publishing…";
+  try{
+    let sha;
+    const g=await fetch(base+"?ref="+encodeURIComponent(branch),{headers});
+    if(g.status===200){ sha=(await g.json()).sha; }
+    else if(g.status===401){ status.textContent="Token rejected (401) — check the token and its permissions."; return; }
+    else if(g.status===404){ /* file or repo not found yet — try create */ }
+    else if(g.status!==200 && g.status!==404){ status.textContent="Couldn’t reach repo ("+g.status+"). Check owner/name and branch."; return; }
+    const put=await fetch(base,{method:"PUT",headers:Object.assign({"Content-Type":"application/json"},headers),
+      body:JSON.stringify({message:"Update catalog.json via costing tool", content, branch, sha})});
+    if(put.ok){ status.textContent="Published ✓ — your live site updates in about a minute."; }
+    else { let m=""; try{ m=(await put.json()).message||""; }catch(e){} status.textContent="Failed ("+put.status+"): "+(m||"check repo, branch and token scope."); }
+  }catch(err){ status.textContent="Network error — check your connection and repo name."; }
+}
 function csvCell(v){ const s=String(v??""); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
 function downloadCSV(){
   const L=[],row=(...a)=>L.push(a.map(csvCell).join(","));
