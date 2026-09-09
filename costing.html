@@ -723,7 +723,7 @@ function buildCatalog(){
   return { business:state.company, tagline:state.tagline||"", currency:state.currency, order:state.orderLink||{label:"",url:""},
     generatedAt:new Date().toISOString(),
     types: state.types.map(t=>({ name:t.name,
-      products: t.products.filter(p=> p.web && p.web.show && numv(p.price)>0)
+      products: t.products.filter(p=> (p.available===false) || (p.web && p.web.show && numv(p.price)>0))
         .map(p=>({ name:p.name, price:numv(p.price), description:(p.web.desc||""), image:(p.web.img||""), available:p.available!==false }))
     })).filter(t=> t.products.length) };
 }
