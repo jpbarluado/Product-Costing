@@ -240,7 +240,6 @@
 <div class="toolbar type-toolbar"><div class="wrap toolbar-inner">
   <nav class="tabs" role="tablist" aria-label="Type sections">
     <span class="navlabel">This type</span>
-    <button class="tab biz" role="tab" data-tab="overhead" aria-selected="false">Overhead</button>
     <button class="tab biz" role="tab" data-tab="summary" aria-selected="false">Summary</button>
   </nav>
   <div class="actions">
@@ -297,35 +296,44 @@
       <div class="foot-note"></div>
       <div class="subtotals"><div class="srow total"><span>Packaging / serving</span><span id="packUnit">—</span></div></div>
     </div>
+    <div class="section-sub">Overhead <span>— your estimate, per batch (gas, transport, talent, rent…)</span></div>
+    <table class="ledger"><thead><tr>
+      <th>Overhead item</th><th class="num">Amount / batch</th><th></th>
+    </tr></thead><tbody id="ovBody"></tbody></table>
+    <div class="add-row"><button class="add-btn" data-add="overhead">+ Add overhead</button></div>
+    <div class="panel-foot">
+      <div class="foot-note" id="ovSpread">—</div>
+      <div class="subtotals">
+        <div class="srow"><span class="lab">Overhead / batch</span><span id="ovBatch">—</span></div>
+        <div class="srow total"><span>Overhead / serving</span><span id="ovUnit">—</span></div>
+      </div>
+    </div>
     <div class="cost-card">
-      <div><div class="fc-label">Ingredients + packaging / serving</div><div class="fc-num" id="directUnit">—</div></div>
+      <div><div class="fc-label">Total cost per serving</div><div class="fc-num" id="directUnit">—</div></div>
       <div class="fc-side" id="directBreakdown">—</div>
     </div>
   </section>
 
   <section class="panel" id="tab-pricing">
     <div class="panel-head"><h2>Pricing</h2>
-      <p>Price = ingredients + packaging + your talent fee + a share of session costs, plus your markup. Set the markup and talent fee — the price follows.</p></div>
+      <p>Price = your total cost per serving (ingredients + packaging + overhead) plus your markup. Set the markup — the price follows.</p></div>
     <div class="price-controls">
       <div class="field"><label for="pMarkup">Markup % (your profit)</label><input id="pMarkup" type="number" min="0" step="1" class="num"></div>
-      <div class="field"><label for="pTalentBatch">Talent fee — whole batch</label><input id="pTalentBatch" type="number" min="0" step="1" class="num"></div>
-      <div class="field"><label for="pTalentServing">Talent fee — per serving</label><input id="pTalentServing" type="number" min="0" step="1" class="num"></div>
     </div>
-    <label style="display:flex;align-items:center;gap:9px;font-size:14px;margin-bottom:20px;cursor:pointer">
-      <input type="checkbox" id="pShare"> Share session costs (transport, gas, rent) — <span style="color:var(--muted)">turn OFF for add-ons like extra rice</span>
-    </label>
     <div class="tiles">
       <div class="tile"><div class="t-label">Ingredients + packaging</div><div class="t-num" id="prDirect">—</div><div class="t-sub">/ serving</div></div>
-      <div class="tile"><div class="t-label">+ Talent fee</div><div class="t-num" id="prTalent">—</div><div class="t-sub">/ serving</div></div>
-      <div class="tile"><div class="t-label">+ Session share</div><div class="t-num" id="prShared">—</div><div class="t-sub" id="prSharedSub">/ serving</div></div>
+      <div class="tile"><div class="t-label">+ Overhead</div><div class="t-num" id="prShared">—</div><div class="t-sub">/ serving</div></div>
       <div class="tile"><div class="t-label">= Total cost</div><div class="t-num" id="prTotal">—</div><div class="t-sub">/ serving</div></div>
       <div class="tile" style="background:var(--ink)"><div class="t-label" style="color:#9fb0bd">Selling price</div><div class="t-num" id="prPrice" style="color:#fff">—</div><div class="t-sub" id="prPriceSub" style="color:#9fb0bd">auto · locked</div></div>
       <div class="tile profit" id="prProfitTile"><div class="t-label">Profit / serving</div><div class="t-num" id="prProfit">—</div><div class="t-sub">price − total cost</div></div>
     </div>
     <div class="callout" id="pricingNote">—</div>
     <div class="section-sub">Website listing <span>— what customers see</span></div>
-    <label style="display:flex;align-items:center;gap:9px;font-size:14px;margin-bottom:14px;cursor:pointer">
+    <label style="display:flex;align-items:center;gap:9px;font-size:14px;margin-bottom:10px;cursor:pointer">
       <input type="checkbox" id="webShow"> Show this product on the marketing site
+    </label>
+    <label style="display:flex;align-items:center;gap:9px;font-size:14px;margin-bottom:14px;cursor:pointer">
+      <input type="checkbox" id="webUnavail"> Currently unavailable <span style="color:var(--muted)">— stays on the menu but can’t be ordered</span>
     </label>
     <div class="price-controls">
       <div class="field" style="flex:1;min-width:260px"><label for="webDesc">Short description</label><input id="webDesc" placeholder="e.g. Slow-cooked pork monggo with rice"></div>
@@ -333,23 +341,11 @@
     </div>
   </section>
 
-  <section class="panel" id="tab-overhead">
-    <div class="panel-head"><h2>Session costs <span style="font-weight:400;color:var(--muted);font-size:14px">— shared for one cook</span></h2>
-      <p>Costs for a single cooking session that aren’t tied to one dish — transport/delivery, shared gas, rent if any. They’re split only across the servings of dishes you cook that share them. Add-ons (like extra rice) with sharing turned off don’t carry any.</p></div>
-    <table class="ledger" style="max-width:560px"><thead><tr><th>Cost</th><th class="num">Amount / session</th><th></th></tr></thead>
-      <tbody id="ovBody"></tbody></table>
-    <div class="add-row" style="max-width:560px"><button class="add-btn" data-add="overhead">+ Add session cost</button></div>
-    <div class="panel-foot" style="max-width:560px">
-      <div class="foot-note" id="ovSpread">—</div>
-      <div class="subtotals" style="min-width:220px"><div class="srow total"><span>Total session costs</span><span id="ovTotal">—</span></div></div>
-    </div>
-  </section>
-
   <section class="panel" id="tab-summary">
     <div class="panel-head"><h2 id="suHead">Summary</h2>
       <p>This cooking session, based on the servings you entered per dish. Click a row to open that product.</p></div>
     <div class="tiles" style="margin-bottom:22px">
-      <div class="tile"><div class="t-label">Session costs</div><div class="t-num" id="suOh">—</div></div>
+      <div class="tile"><div class="t-label">Overhead (all dishes)</div><div class="t-num" id="suOh">—</div></div>
       <div class="tile"><div class="t-label">Total sales</div><div class="t-num" id="suRev">—</div><div class="t-sub">all servings</div></div>
       <div class="tile"><div class="t-label">Total cost</div><div class="t-num" id="suCost">—</div><div class="t-sub">ingredients + talent + session</div></div>
       <div class="tile profit" id="suProfitTile"><div class="t-label">Profit this session</div><div class="t-num" id="suProfit">—</div><div class="t-sub">sales − cost</div></div>
@@ -414,48 +410,48 @@
 const uid = () => Math.random().toString(36).slice(2, 9);
 
 function emptyProduct(name){
-  return { id:uid(), name:name||"New product", sku:"", servings:5, talentBatch:0, talentServing:0, shareSession:true, markup:60, price:0,
+  return { id:uid(), name:name||"New product", sku:"", servings:5, markup:60, available:true, price:0,
     materials:[{id:uid(),name:"",qty:0,unit:"g",unitCost:0}],
     packaging:[{id:uid(),name:"",qty:1,unitCost:0}],
+    overhead:[{id:uid(),name:"",amount:0}],
     web:{show:true,desc:"",img:""} };
 }
 function emptyType(name){
   const p=emptyProduct("Product A");
-  return { id:uid(), name:name||"New type", sessionCosts:[{id:uid(),name:"",amount:0}], products:[p], activeId:p.id };
+  return { id:uid(), name:name||"New type", products:[p], activeId:p.id };
 }
 function sampleState(){
   return { company:"Barluado's Kitchen", currency:"PHP", tagline:"Home-cooked lunch, made to order", orderLink:{label:"Order on Messenger",url:"https://m.me/syntax.premiero"}, activeTypeId:"t1", types:[
     { id:"t1", name:"Lunch menu", activeId:"p1",
-      sessionCosts:[
-        {id:uid(),name:"Transport / delivery",amount:150},
-        {id:uid(),name:"Shared gas (LPG)",amount:80}],
       products:[
-        { id:"p1", name:"Monggo", sku:"MNG-01", servings:5, talentBatch:100, talentServing:5, shareSession:true, markup:40,
+        { id:"p1", name:"Monggo", sku:"MNG-01", servings:5, markup:40, available:true,
           materials:[{id:uid(),name:"Monggo beans",qty:0.5,unit:"kg",unitCost:120},{id:uid(),name:"Pork",qty:0.3,unit:"kg",unitCost:300},{id:uid(),name:"Veg & aromatics",qty:1,unit:"set",unitCost:70}],
-          packaging:[{id:uid(),name:"Container + lid",qty:1,unitCost:8},{id:uid(),name:"Spoon + napkin",qty:1,unitCost:2}] },
-        { id:"p2", name:"Pasta Carbonara", sku:"CAR-01", servings:5, talentBatch:120, talentServing:5, shareSession:true, markup:40,
+          packaging:[{id:uid(),name:"Container + lid",qty:1,unitCost:8},{id:uid(),name:"Spoon + napkin",qty:1,unitCost:2}],
+          overhead:[{id:uid(),name:"Talent fee",amount:100},{id:uid(),name:"Gas (LPG)",amount:40},{id:uid(),name:"Transport",amount:75}] },
+        { id:"p2", name:"Pasta Carbonara", sku:"CAR-01", servings:5, markup:40, available:true,
           materials:[{id:uid(),name:"Pasta",qty:0.5,unit:"kg",unitCost:90},{id:uid(),name:"Cream & cheese",qty:1,unit:"set",unitCost:180},{id:uid(),name:"Bacon",qty:0.2,unit:"kg",unitCost:350}],
-          packaging:[{id:uid(),name:"Container + lid",qty:1,unitCost:8},{id:uid(),name:"Fork + napkin",qty:1,unitCost:2}] },
-        { id:"p3", name:"Extra plain rice", sku:"RICE-01", servings:5, talentBatch:0, talentServing:1, shareSession:false, markup:40,
+          packaging:[{id:uid(),name:"Container + lid",qty:1,unitCost:8},{id:uid(),name:"Fork + napkin",qty:1,unitCost:2}],
+          overhead:[{id:uid(),name:"Talent fee",amount:120},{id:uid(),name:"Gas (LPG)",amount:50},{id:uid(),name:"Transport",amount:75}] },
+        { id:"p3", name:"Extra plain rice", sku:"RICE-01", servings:5, markup:40, available:true,
           materials:[{id:uid(),name:"Rice",qty:0.4,unit:"kg",unitCost:55}],
-          packaging:[{id:uid(),name:"Small container",qty:1,unitCost:3}] }
+          packaging:[{id:uid(),name:"Small container",qty:1,unitCost:3}],
+          overhead:[{id:uid(),name:"Talent fee",amount:10},{id:uid(),name:"Gas (LPG)",amount:10}] }
       ]}
   ]};
 }
 function normProduct(p){ p.id=p.id||uid(); p.materials=p.materials||p.ingredients||[]; p.materials.forEach(i=> i.id=i.id||uid());
   p.packaging=p.packaging||[]; p.packaging.forEach(i=> i.id=i.id||uid());
+  p.overhead=Array.isArray(p.overhead)?p.overhead:[{id:uid(),name:"",amount:0}]; p.overhead.forEach(d=> d.id=d.id||uid());
   if(p.servings==null) p.servings=(p.expectedUnits!=null?p.expectedUnits:(p.yield!=null?p.yield:(p.quantity!=null?p.quantity:5)));
-  if(p.talentBatch==null) p.talentBatch=0; if(p.talentServing==null) p.talentServing=0;
-  if(p.shareSession==null) p.shareSession=true;
+  if(p.available==null) p.available=true;
   if(p.price==null) p.price=0; if(p.markup==null) p.markup=60; p.web=p.web||{show:true,desc:"",img:""}; return p; }
 function normType(t){ t.id=t.id||uid(); t.name=t.name||"Type";
-  t.sessionCosts=Array.isArray(t.sessionCosts)?t.sessionCosts:(Array.isArray(t.overhead)?t.overhead:(Array.isArray(t.dayCosts)?t.dayCosts:[])); t.sessionCosts.forEach(d=> d.id=d.id||uid());
   t.products=Array.isArray(t.products)&&t.products.length?t.products:[emptyProduct("Product A")]; t.products.forEach(normProduct);
   if(!t.products.find(p=>p.id===t.activeId)) t.activeId=t.products[0].id; return t; }
 function normalise(s){
   s.company=s.company||""; s.currency=s.currency||"PHP"; s.tagline=s.tagline||""; s.orderLink=s.orderLink||{label:"",url:""};
   if(!Array.isArray(s.types)){
-    if(Array.isArray(s.products)){ s.types=[normType({name:s.company||"Type 1",sessionCosts:s.overhead||s.dayCosts,products:s.products})]; }
+    if(Array.isArray(s.products)){ s.types=[normType({name:s.company||"Type 1",products:s.products})]; }
     else if(s.meta&&Array.isArray(s.materials)){ s.types=[normType({name:"Type 1",products:[{name:s.meta.name,sku:s.meta.sku,servings:s.meta.quantity,materials:s.materials}]})]; }
     else s.types=[emptyType("Type 1")];
     delete s.products; delete s.overhead; delete s.dayCosts;
@@ -498,31 +494,24 @@ function directOf(p){
   const matUnit=servings>0?matBatch/servings:0;
   const packUnit=p.packaging.reduce((s,i)=> s+numv(i.qty)*numv(i.unitCost),0);
   const directUnit=matUnit+packUnit;
-  const talentUnit=numv(p.talentServing)+(servings>0?numv(p.talentBatch)/servings:0);
-  return {matBatch,servings,matUnit,packUnit,directUnit,talentUnit};
-}
-/* shared session costs split across the servings of dishes that share (add-ons excluded) */
-function sessionAgg(t){
-  const S=t.sessionCosts.reduce((s,d)=> s+numv(d.amount),0);
-  let shareable=0; t.products.forEach(p=>{ if(p.shareSession) shareable+=Math.max(0,numv(p.servings)); });
-  return {S,shareable};
+  const ohBatch=p.overhead.reduce((s,d)=> s+numv(d.amount),0);
+  const ohUnit=servings>0?ohBatch/servings:0;
+  return {matBatch,servings,matUnit,packUnit,directUnit,ohBatch,ohUnit};
 }
 function roundPrice(x){ return Math.round(x); }
-function full(p,t,agg){
-  agg=(agg&&agg.agg)?agg.agg:(agg||sessionAgg(t));
+function full(p,t){
   const d=directOf(p);
-  const shared=(p.shareSession&&agg.shareable>0)? agg.S/agg.shareable : 0;
-  const total=d.directUnit+d.talentUnit+shared;
+  const total=d.directUnit+d.ohUnit;
   const markup=Math.max(0,numv(p.markup));
   const price=roundPrice(total*(1+markup/100));
   const profitUnit=price-total;
-  return Object.assign({},d,{shared,total,markup,price,profitUnit});
+  return Object.assign({},d,{shared:d.ohUnit,total,markup,price,profitUnit});
 }
 function bizOf(t){
-  const agg=sessionAgg(t); let cost=0,sales=0,servs=0;
-  t.products.forEach(p=>{ const f=full(p,t,agg); p.price=f.price; const s=Math.max(0,numv(p.servings)); cost+=f.total*s; sales+=f.price*s; servs+=s; });
+  let cost=0,sales=0,servs=0,ohTotal=0;
+  t.products.forEach(p=>{ const f=full(p,t); p.price=f.price; const s=Math.max(0,numv(p.servings)); cost+=f.total*s; sales+=f.price*s; servs+=s; ohTotal+=f.ohBatch; });
   const profit=sales-cost;
-  return {S:agg.S,shareable:agg.shareable,cost,sales,profit,servs,agg};
+  return {cost,sales,profit,servs,ohTotal};
 }
 
 /* ---------- row builders ---------- */
@@ -572,54 +561,46 @@ function render(){
   byId("typeName").value=t.name;
   const p=active();
   byId("pName").value=p.name; byId("pSku").value=p.sku; byId("pServings").value=p.servings;
-  byId("pMarkup").value=p.markup; byId("pTalentBatch").value=p.talentBatch; byId("pTalentServing").value=p.talentServing; byId("pShare").checked=!!p.shareSession;
-  byId("webShow").checked=!!(p.web&&p.web.show); byId("webDesc").value=(p.web&&p.web.desc)||""; byId("webImg").value=(p.web&&p.web.img)||"";
+  byId("pMarkup").value=p.markup;
+  byId("webShow").checked=!!(p.web&&p.web.show); byId("webUnavail").checked=!p.available; byId("webDesc").value=(p.web&&p.web.desc)||""; byId("webImg").value=(p.web&&p.web.img)||"";
   byId("tagline").value=state.tagline||""; byId("orderLabel").value=state.orderLink.label||""; byId("orderUrl").value=state.orderLink.url||"";
   byId("matBody").innerHTML=p.materials.length?p.materials.map(matRow).join(""):`<tr><td colspan="6" class="empty">No ingredients yet — add one below.</td></tr>`;
   byId("packBody").innerHTML=p.packaging.length?p.packaging.map(packRow).join(""):`<tr><td colspan="5" class="empty">No packaging yet — add one below.</td></tr>`;
-  byId("ovBody").innerHTML=t.sessionCosts.length?t.sessionCosts.map(ovRow).join(""):`<tr><td colspan="3" class="empty">No session costs yet — add one below.</td></tr>`;
+  byId("ovBody").innerHTML=p.overhead.length?p.overhead.map(ovRow).join(""):`<tr><td colspan="3" class="empty">No overhead yet — add one below.</td></tr>`;
   byId("suHead").textContent = (t.name||"Type")+" summary";
   renderTypeBar(); renderProductBar(); recompute();
 }
 
 /* ---------- recompute ---------- */
 function recompute(){
-  const t=at(), b=bizOf(t), p=active(), f=full(p,t,b);
+  const t=at(), b=bizOf(t), p=active(), f=full(p,t);
   p.materials.forEach(i=>{ const cell=document.querySelector(`[data-line="materials"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(numv(i.qty)*numv(i.unitCost)); });
   p.packaging.forEach(i=>{ const cell=document.querySelector(`[data-line="packaging"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(numv(i.qty)*numv(i.unitCost)); });
 
-  setText("matBatch",fmt(f.matBatch)); setText("matUnit",fmt(f.matUnit)); setText("packUnit",fmt(f.packUnit)); setText("directUnit",fmt(f.directUnit));
-  setText("directBreakdown",`${fmt(f.matUnit)} ingredients + ${fmt(f.packUnit)} packaging · ${f.servings||0} servings`);
+  setText("matBatch",fmt(f.matBatch)); setText("matUnit",fmt(f.matUnit)); setText("packUnit",fmt(f.packUnit));
+  setText("ovBatch",fmt(f.ohBatch)); setText("ovUnit",fmt(f.ohUnit));
+  setText("ovSpread",`${fmt(f.ohBatch)} overhead ÷ ${f.servings||0} servings = ${fmt(f.ohUnit)} / serving`);
+  setText("directUnit",fmt(f.total));
+  setText("directBreakdown",`${fmt(f.directUnit)} ingredients+packaging + ${fmt(f.ohUnit)} overhead · ${f.servings||0} servings`);
 
-  // hero = selling price
   setText("heroCost",fmt(f.price));
-  setText("heroSub",`cost ${fmt(f.total)} · profit ${fmt(f.profitUnit)} · ${f.markup}% markup`);
+  setText("heroSub",`cost ${fmt(f.total)} · profit ${fmt(f.profitUnit)} · ${f.markup}% markup${p.available?"":" · UNAVAILABLE"}`);
 
   setText("tProd",p.name||"Untitled"); setText("tDirect",fmt(f.total));
   flash("tTotal",fmt(f.price)); setText("tProfit",fmt(f.profitUnit));
 
-  setText("prDirect",fmt(f.directUnit)); setText("prTalent",fmt(f.talentUnit)); setText("prShared",fmt(f.shared));
-  setText("prSharedSub", p.shareSession? "/ serving" : "add-on — not shared");
-  setText("prTotal",fmt(f.total));
+  setText("prDirect",fmt(f.directUnit)); setText("prShared",fmt(f.ohUnit)); setText("prTotal",fmt(f.total));
   setText("prPrice",fmt(f.price)); setText("prPriceSub",`= cost + ${f.markup}% markup`);
   setText("prProfit",fmt(f.profitUnit));
   const ppt=byId("prProfitTile"); ppt.classList.remove("bad"); if(f.profitUnit<0) ppt.classList.add("bad");
-  byId("pShare").checked=!!p.shareSession;
   let note;
-  if(f.total<=0) note=`Add ingredients and a talent fee so there’s a cost to mark up.`;
-  else note=`Cost <strong>${fmt(f.total)}</strong> = ${fmt(f.directUnit)} ingredients+packaging + ${fmt(f.talentUnit)} talent${f.shared>0?" + "+fmt(f.shared)+" session":""}. Plus <strong>${f.markup}%</strong> markup → price <strong>${fmt(f.price)}</strong>, profit <strong>${fmt(f.profitUnit)}</strong> per serving.`;
+  if(f.total<=0) note=`Add ingredients and overhead so there’s a cost to mark up.`;
+  else note=`Cost <strong>${fmt(f.total)}</strong> = ${fmt(f.directUnit)} ingredients+packaging + ${fmt(f.ohUnit)} overhead. Plus <strong>${f.markup}%</strong> markup → price <strong>${fmt(f.price)}</strong>, profit <strong>${fmt(f.profitUnit)}</strong> per serving.`;
   byId("pricingNote").innerHTML=note;
 
   const chip=document.querySelector(`.prod-chip[data-switch="${p.id}"] .cu`); if(chip) chip.textContent=fmt(f.price);
-  const chipName=document.querySelector(`.prod-chip[data-switch="${p.id}"] span:first-child`); if(chipName) chipName.textContent=p.name||"Untitled";
+  const chipName=document.querySelector(`.prod-chip[data-switch="${p.id}"] span:first-child`); if(chipName) chipName.textContent=(p.name||"Untitled")+(p.available?"":" (n/a)");
   const typeChipName=document.querySelector(`.type-chip[data-switchtype="${t.id}"] span:first-child`); if(typeChipName) typeChipName.textContent=t.name||"Untitled";
-
-  setText("ovTotal",fmt(b.S));
-  let spread;
-  if(b.S<=0) spread="No session costs — add transport, gas, etc. above.";
-  else if(b.shareable<=0) spread="No dishes are sharing yet. Turn on “Share session costs” on your main dishes (Pricing tab).";
-  else spread=`Split ≈ ${fmt(b.S/b.shareable)} / serving across ${b.shareable} sharing servings.`;
-  setText("ovSpread",spread);
 
   if(currentTab==="summary") renderSummary(t,b);
   persist();
@@ -628,11 +609,12 @@ function recompute(){
 /* ---------- summary ---------- */
 function renderSummary(t,b){
   t=t||at(); b=b||bizOf(t);
-  setText("suOh",fmt(b.S)); setText("suRev",fmt(b.sales)); setText("suCost",fmt(b.cost)); setText("suProfit",fmt(b.profit));
+  setText("suOh",fmt(b.ohTotal)); setText("suRev",fmt(b.sales)); setText("suCost",fmt(b.cost)); setText("suProfit",fmt(b.profit));
   byId("suProfitTile").classList.toggle("profit", b.profit>=0); byId("suProfitTile").classList.toggle("bad", b.profit<0);
-  const rows=t.products.map(p=>{ const f=full(p,t,b); const s=Math.max(0,numv(p.servings)); const lineProfit=f.profitUnit*s; const bad=f.profitUnit<0;
+  const rows=t.products.map(p=>{ const f=full(p,t); const s=Math.max(0,numv(p.servings)); const lineProfit=f.profitUnit*s; const bad=f.profitUnit<0;
+    const tags=(p.available?"":' <span class="psku">· unavailable</span>')+((p.web&&p.web.show)?"":' <span class="psku">· hidden</span>');
     return `<tr data-open="${p.id}">
-      <td>${esc(p.name)||"Untitled"} ${p.sku?`<span class="psku">${esc(p.sku)}</span>`:""}${p.shareSession?"":' <span class="psku">· add-on</span>'}</td>
+      <td>${esc(p.name)||"Untitled"} ${p.sku?`<span class="psku">${esc(p.sku)}</span>`:""}${tags}</td>
       <td>${fmt(f.total)}</td><td>${fmt(f.price)}</td>
       <td class="profitcell ${bad?"bad":"good"}">${fmt(f.profitUnit)}</td>
       <td>${s.toLocaleString()}</td><td>${fmt(f.price*s)}</td>
@@ -640,8 +622,8 @@ function renderSummary(t,b){
   byId("allBody").innerHTML=rows||`<tr><td colspan="7" class="empty">No products.</td></tr>`;
   setText("afUnits",b.servs.toLocaleString()); setText("afSales",fmt(b.sales)); setText("afProfit",fmt(b.profit));
   let st;
-  if(b.servs<=0) st=`Set the servings (requests) on your dishes to see this session’s totals.`;
-  else st=`This session: <strong>${b.servs.toLocaleString()}</strong> servings → sales <strong>${fmt(b.sales)}</strong>, cost <strong>${fmt(b.cost)}</strong> (incl. ${fmt(b.S)} session costs), leaving <strong>${fmt(b.profit)}</strong> profit.`;
+  if(b.servs<=0) st=`Set the servings on your dishes to see this session’s totals.`;
+  else st=`This session: <strong>${b.servs.toLocaleString()}</strong> servings → sales <strong>${fmt(b.sales)}</strong>, cost <strong>${fmt(b.cost)}</strong>, leaving <strong>${fmt(b.profit)}</strong> profit.`;
   byId("suStatement").innerHTML=st;
 
   if(state.types.length>1){
@@ -655,7 +637,7 @@ function renderSummary(t,b){
 function switchTab(name){ currentTab=name;
   document.querySelectorAll(".tab").forEach(b=> b.setAttribute("aria-selected",b.dataset.tab===name));
   document.querySelectorAll(".panel").forEach(p=> p.classList.toggle("active",p.id==="tab-"+name));
-  document.body.classList.toggle("biz-mode", name==="overhead"||name==="summary");
+  document.body.classList.toggle("biz-mode", name==="summary");
   if(name==="summary") renderSummary(); }
 function switchType(id){ if(!state.types.find(t=>t.id===id)) return; state.activeTypeId=id; render();
   document.querySelectorAll(".type-chip").forEach(c=> c.setAttribute("aria-current",c.dataset.switchtype===id)); }
@@ -681,29 +663,27 @@ function onInput(e){
   if(id==="pSku"){ p.sku=el.value; if(currentTab==="summary") renderSummary(); persist(); return; }
   if(id==="pServings"){ p.servings=el.value; renderProductBar(); recompute(); return; }
   if(id==="pMarkup"){ p.markup=el.value; renderProductBar(); recompute(); return; }
-  if(id==="pTalentBatch"){ p.talentBatch=el.value; renderProductBar(); recompute(); return; }
-  if(id==="pTalentServing"){ p.talentServing=el.value; renderProductBar(); recompute(); return; }
-  if(id==="pShare"){ p.shareSession=el.checked; renderProductBar(); recompute(); return; }
+  if(id==="webUnavail"){ p.available=!el.checked; renderProductBar(); recompute(); return; }
   const sec=el.dataset.sec, field=el.dataset.field, rid=el.dataset.id;
-  if(sec&&field&&rid){ const arr = sec==="overhead"?t.sessionCosts:p[sec]; const row=arr.find(r=>r.id===rid);
+  if(sec&&field&&rid){ const arr = sec==="overhead"?p.overhead:p[sec]; const row=arr.find(r=>r.id===rid);
     if(row){ row[field]=el.value; renderProductBar(); recompute(); } }
 }
 function onClick(e){
   if(e.target.id==="pubModal"){ byId("pubModal").style.display="none"; return; }
   const st=e.target.closest(".type-chip"); if(st){ switchType(st.dataset.switchtype); return; }
-  const sw=e.target.closest(".prod-chip"); if(sw){ switchProduct(sw.dataset.switch); if(currentTab==="overhead"||currentTab==="summary") switchTab("materials"); return; }
+  const sw=e.target.closest(".prod-chip"); if(sw){ switchProduct(sw.dataset.switch); if(currentTab==="summary") switchTab("materials"); return; }
   const openRow=e.target.closest("tr[data-open]"); if(openRow){ switchProduct(openRow.dataset.open); switchTab("materials"); return; }
   const btn=e.target.closest("button"); if(!btn) return;
   if(btn.dataset.tab){ switchTab(btn.dataset.tab); return; }
   if(btn.dataset.add){ const sec=btn.dataset.add, t=at(), p=active();
     if(sec==="materials"){ p.materials.push({id:uid(),name:"",qty:0,unit:"g",unitCost:0}); byId("matBody").innerHTML=p.materials.map(matRow).join(""); }
     if(sec==="packaging"){ p.packaging.push({id:uid(),name:"",qty:1,unitCost:0}); byId("packBody").innerHTML=p.packaging.map(packRow).join(""); }
-    if(sec==="overhead"){ t.sessionCosts.push({id:uid(),name:"",amount:0}); byId("ovBody").innerHTML=t.sessionCosts.map(ovRow).join(""); }
+    if(sec==="overhead"){ p.overhead.push({id:uid(),name:"",amount:0}); byId("ovBody").innerHTML=p.overhead.map(ovRow).join(""); }
     recompute();
     const body=sec==="materials"?"matBody":sec==="packaging"?"packBody":"ovBody";
     const last=byId(body).querySelector("tr:last-child input"); if(last) last.focus(); return; }
   if(btn.dataset.remove){ const sec=btn.dataset.remove, rid=btn.dataset.id, t=at(), p=active();
-    if(sec==="overhead") t.sessionCosts=t.sessionCosts.filter(r=>r.id!==rid); else p[sec]=p[sec].filter(r=>r.id!==rid);
+    if(sec==="overhead") p.overhead=p.overhead.filter(r=>r.id!==rid); else p[sec]=p[sec].filter(r=>r.id!==rid);
     render(); switchTab(currentTab); return; }
   if(btn.dataset.action){ handleAction(btn.dataset.action); return; }
 }
@@ -744,7 +724,7 @@ function buildCatalog(){
     generatedAt:new Date().toISOString(),
     types: state.types.map(t=>({ name:t.name,
       products: t.products.filter(p=> p.web && p.web.show && numv(p.price)>0)
-        .map(p=>({ name:p.name, price:numv(p.price), description:(p.web.desc||""), image:(p.web.img||"") }))
+        .map(p=>({ name:p.name, price:numv(p.price), description:(p.web.desc||""), image:(p.web.img||""), available:p.available!==false }))
     })).filter(t=> t.products.length) };
 }
 function downloadCatalog(){ download("catalog.json", JSON.stringify(buildCatalog(),null,2), "application/json"); byId("pubModal").style.display="none"; }
@@ -783,19 +763,19 @@ function downloadCSV(){
   const L=[],row=(...a)=>L.push(a.map(csvCell).join(","));
   row("Business",state.company); row("Currency",state.currency); row("Generated",new Date().toISOString().slice(0,10)); row("");
   state.types.forEach(t=>{ const b=bizOf(t);
-    row("================ TYPE: "+(t.name||"Untitled")+" ================");
-    row("Session costs (shared in menu)"); row("Cost","Amount/session"); t.sessionCosts.forEach(d=> row(d.name,d.amount)); row("Total session costs","",b.S); row("");
-    row("Summary"); row("Product","Code","Ingredients+pack/serv","Talent/serv","Session/serv","Total cost/serv","Markup %","Price","Profit/serv","Servings","Sales","Profit");
-    t.products.forEach(p=>{ const f=full(p,t,b); const s=Math.max(0,numv(p.servings)); row(p.name,p.sku,f.directUnit.toFixed(2),f.talentUnit.toFixed(2),f.shared.toFixed(2),f.total.toFixed(2),f.markup,f.price,f.profitUnit.toFixed(2),s,(f.price*s).toFixed(2),(f.profitUnit*s).toFixed(2)); });
-    row("Session totals","","","","","","","",b.sales.toFixed(2)+" sales",b.servs,b.sales.toFixed(2),b.profit.toFixed(2)); row("");
-    t.products.forEach(p=>{ const f=full(p,t,b);
-      row("Product: "+(p.name||"Untitled")); row("Servings this session",p.servings); row("Shares session costs?",p.shareSession?"yes":"no (add-on)");
+    row("================ MENU: "+(t.name||"Untitled")+" ================");
+    row("Summary"); row("Product","Code","Ingredients+pack/serv","Overhead/serv","Total cost/serv","Markup %","Price","Profit/serv","Servings","Sales","Profit","Available","On site");
+    t.products.forEach(p=>{ const f=full(p,t); const s=Math.max(0,numv(p.servings)); row(p.name,p.sku,f.directUnit.toFixed(2),f.ohUnit.toFixed(2),f.total.toFixed(2),f.markup,f.price,f.profitUnit.toFixed(2),s,(f.price*s).toFixed(2),(f.profitUnit*s).toFixed(2),(p.available!==false?"yes":"no"),((p.web&&p.web.show)?"yes":"no")); });
+    row("Session totals","","","","","","",b.sales.toFixed(2),b.servs,b.sales.toFixed(2),b.profit.toFixed(2)); row("");
+    t.products.forEach(p=>{ const f=full(p,t);
+      row("Product: "+(p.name||"Untitled")); row("Servings this session",p.servings); row("Available",p.available!==false?"yes":"no");
       row("Ingredients (for this cook)"); row("Ingredient","Qty","Unit","Unit cost","Line");
       p.materials.forEach(i=> row(i.name,i.qty,i.unit,i.unitCost,(numv(i.qty)*numv(i.unitCost)).toFixed(2)));
       row("Packaging (per serving)"); row("Item","Qty","Cost each","Line");
       p.packaging.forEach(i=> row(i.name,i.qty,i.unitCost,(numv(i.qty)*numv(i.unitCost)).toFixed(2)));
-      row("Talent fee — batch",p.talentBatch); row("Talent fee — per serving",p.talentServing);
-      row("Total cost/serving","","",f.total.toFixed(2)); row("Selling price",f.price); row("");
+      row("Overhead (per batch)"); row("Item","Amount");
+      p.overhead.forEach(i=> row(i.name,i.amount));
+      row("Overhead / batch","",f.ohBatch.toFixed(2)); row("Total cost/serving","",f.total.toFixed(2)); row("Selling price",f.price); row("");
     });
   });
   download(slug(state.company)+"-costing.csv", L.join("\n"), "text/csv");
@@ -809,12 +789,13 @@ function importJSON(file){ const r=new FileReader();
 
 /* ---------- print (active product) ---------- */
 function buildPrint(){
-  const t=at(), b=bizOf(t), p=active(), f=full(p,t,b), money=fmt;
+  const t=at(), b=bizOf(t), p=active(), f=full(p,t), money=fmt;
   const mat=p.materials.map(i=>`<tr><td>${esc(i.name)||"—"}</td><td class="pnum">${i.qty}</td><td>${esc(i.unit)}</td><td class="pnum">${money(numv(i.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(i.unitCost))}</td></tr>`).join("");
   const pack=p.packaging.map(i=>`<tr><td>${esc(i.name)||"—"}</td><td class="pnum">${i.qty}</td><td class="pnum">${money(numv(i.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(i.unitCost))}</td></tr>`).join("");
+  const ov=p.overhead.map(i=>`<tr><td>${esc(i.name)||"—"}</td><td class="pnum">${money(numv(i.amount))}</td></tr>`).join("");
   byId("printArea").innerHTML=`
     ${state.company?`<div class="pcompany">${esc(state.company)} · ${esc(t.name)}</div>`:`<div class="pcompany">${esc(t.name)}</div>`}
-    <h1>${esc(p.name)||"Product cost sheet"}</h1>
+    <h1>${esc(p.name)||"Product cost sheet"}${p.available?"":" (currently unavailable)"}</h1>
     <div class="pmeta">${esc(p.sku)?esc(p.sku)+" · ":""}${p.servings} servings this session · ${state.currency}</div>
     <div class="psec">Ingredients (for this cook)</div>
     <table><thead><tr><th>Ingredient</th><th class="pnum">Qty</th><th>Unit</th><th class="pnum">Unit cost</th><th class="pnum">Line</th></tr></thead>
@@ -823,18 +804,19 @@ function buildPrint(){
     <div class="psec">Packaging (per serving)</div>
     <table><thead><tr><th>Item</th><th class="pnum">Qty</th><th class="pnum">Cost each</th><th class="pnum">Line</th></tr></thead>
     <tbody>${pack}<tr class="ptotal"><td colspan="3">Packaging / serving</td><td class="pnum">${money(f.packUnit)}</td></tr></tbody></table>
+    <div class="psec">Overhead (per batch)</div>
+    <table><tbody>${ov}<tr class="ptotal"><td>Overhead / batch</td><td class="pnum">${money(f.ohBatch)}</td></tr>
+    <tr class="ptotal"><td>Overhead / serving</td><td class="pnum">${money(f.ohUnit)}</td></tr></tbody></table>
     <div class="psec">Cost &amp; price (per serving)</div>
     <table><tbody>
       <tr><td>Ingredients + packaging</td><td class="pnum">${money(f.directUnit)}</td></tr>
-      <tr><td>Talent fee</td><td class="pnum">${money(f.talentUnit)}</td></tr>
-      <tr><td>Session cost share${p.shareSession?"":" (add-on — none)"}</td><td class="pnum">${money(f.shared)}</td></tr>
+      <tr><td>Overhead</td><td class="pnum">${money(f.ohUnit)}</td></tr>
       <tr class="ptotal"><td>Total cost / serving</td><td class="pnum">${money(f.total)}</td></tr>
       <tr><td>Selling price (${f.markup}% markup)</td><td class="pnum">${money(f.price)}</td></tr>
       <tr><td>Profit / serving</td><td class="pnum">${money(f.profitUnit)}</td></tr>
     </tbody></table>
     <div class="psec">${esc(t.name)} — this session</div>
     <table><tbody>
-      <tr><td>Total session costs</td><td class="pnum">${money(b.S)}</td></tr>
       <tr><td>Total sales (${b.servs} servings)</td><td class="pnum">${money(b.sales)}</td></tr>
       <tr class="ptotal"><td>Profit this session</td><td class="pnum">${money(b.profit)}</td></tr>
     </tbody></table>`;
