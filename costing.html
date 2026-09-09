@@ -86,6 +86,20 @@
   td.auto{color:var(--muted);font-variant-numeric:tabular-nums;font-size:13px}
   .linkbtn{display:block;margin-top:4px;border:none;background:none;color:var(--accent);font-size:11.5px;cursor:pointer;padding:0;text-decoration:underline}
   .miss{color:var(--danger);font-size:11px;margin-left:6px}
+  .pickbtn{border:1px solid var(--rule);background:var(--surface);border-radius:8px;padding:7px 10px;font-size:13.5px;cursor:pointer;color:var(--ink);width:100%;text-align:left}
+  .pickbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .pickbtn.miss{border-color:var(--danger);color:var(--danger)}
+  .pick-list{max-height:340px;overflow-y:auto;margin:14px 0 4px;border:1px solid var(--rule);border-radius:10px}
+  .pick-item{display:flex;align-items:center;gap:10px;width:100%;border:none;border-bottom:1px solid var(--soft);background:var(--surface);padding:11px 14px;cursor:pointer;text-align:left}
+  .pick-item:last-child{border-bottom:none}
+  .pick-item:hover{background:var(--soft)}
+  .pick-item .pi-name{flex:1;font-weight:500;font-size:14px}
+  .pick-item .pi-meta{color:var(--muted);font-size:12px}
+  .pick-item .pi-cost{font-variant-numeric:tabular-nums;font-weight:600;font-size:13.5px;min-width:80px;text-align:right}
+  .libcat{border:1px solid var(--rule);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+  .libcat-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .cat-name{flex:1;border:none;border-bottom:1px solid transparent;background:transparent;font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;padding:4px 2px}
+  .cat-name:hover{border-bottom-color:var(--soft)} .cat-name:focus{outline:none;border-bottom-color:var(--accent)}
 
   main{padding:26px 0 40px}
   .panel{display:none} .panel.active{display:block}
@@ -394,6 +408,13 @@
 </datalist>
 
 <div id="printArea"></div>
+<div id="pickModal" class="modal-bg" style="display:none"><div class="modal" style="max-width:520px">
+  <h3>Add from library</h3>
+  <p style="margin-bottom:12px">Search your materials, overhead and packaging — from every category. Manage items in the Library tab.</p>
+  <input id="pickSearch" type="text" placeholder="Search…" style="width:100%;border:1px solid var(--rule);border-radius:9px;padding:10px 12px;font-size:15px">
+  <div id="pickList" class="pick-list"></div>
+  <div class="modal-actions"><button class="btn" id="pickClose">Close</button></div>
+</div></div>
 <div id="toast" style="position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:13.5px;z-index:70;opacity:0;transition:all .25s;pointer-events:none"></div>
 <div id="pubModal" class="modal-bg" style="display:none"><div class="modal">
   <h3>Publish to your marketing site</h3>
@@ -423,40 +444,37 @@
 "use strict";
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-function emptyLib(){ return { materials:[], overhead:[], packaging:[] }; }
+function emptyLib(){ return { categories:[{id:uid(),name:"Raw materials",items:[]}] }; }
 function emptyProduct(name){
   return { id:uid(), name:name||"New product", sku:"", servings:5, markup:60, available:true, price:0,
-    materials:[{id:uid(),ref:"",name:"",qty:0,unit:"",unitCost:0}],
-    packaging:[{id:uid(),ref:"",name:"",qty:1,unit:"each",unitCost:0}],
-    overhead:[{id:uid(),ref:"",name:"",qty:1,unit:"",unitCost:0}],
+    materials:[], packaging:[], overhead:[],
     web:{show:true,desc:"",img:""} };
 }
 function emptyType(name){
   const p=emptyProduct("Product A");
-  return { id:uid(), name:name||"New type", library:emptyLib(), products:[p], activeId:p.id };
+  return { id:uid(), name:name||"New type", library:{categories:[]}, products:[p], activeId:p.id };
 }
 function sampleState(){
-  const L={
-    materials:[{id:"m_rice",name:"Rice",unit:"kg",unitCost:55}],
-    overhead:[{id:"o_elec",name:"Electricity",unit:"kWh",unitCost:16},{id:"o_lpg",name:"LPG gas",unit:"kg",unitCost:90},{id:"o_trans",name:"Transport",unit:"trip",unitCost:150}],
-    packaging:[{id:"pk_cont",name:"Container + lid",unit:"each",unitCost:8},{id:"pk_utseil",name:"Utensil + napkin",unit:"each",unitCost:2},{id:"pk_small",name:"Small container",unit:"each",unitCost:3}]
-  };
-  const TL={
-    materials:[{id:"m_mong",name:"Monggo beans",unit:"kg",unitCost:120},{id:"m_pork",name:"Pork",unit:"kg",unitCost:300},{id:"m_veg",name:"Veg & aromatics",unit:"set",unitCost:70},{id:"m_pasta",name:"Pasta",unit:"kg",unitCost:90},{id:"m_cream",name:"Cream & cheese",unit:"set",unitCost:180},{id:"m_bacon",name:"Bacon",unit:"kg",unitCost:350}],
-    overhead:[], packaging:[]
-  };
-  const line=(ref,qty)=>({id:uid(),ref,qty,name:"",unit:"",unitCost:0});
+  const L={ categories:[
+    {id:"c_util",name:"Utilities",items:[{id:"o_elec",name:"Electricity",unit:"kWh",unitCost:16},{id:"o_lpg",name:"LPG gas",unit:"kg",unitCost:90},{id:"o_trans",name:"Transport",unit:"trip",unitCost:150}]},
+    {id:"c_pack",name:"Packaging",items:[{id:"pk_cont",name:"Container + lid",unit:"each",unitCost:8},{id:"pk_uten",name:"Utensil + napkin",unit:"each",unitCost:2},{id:"pk_small",name:"Small container",unit:"each",unitCost:3}]},
+    {id:"c_staple",name:"Staples",items:[{id:"m_rice",name:"Rice",unit:"kg",unitCost:55},{id:"m_garlic",name:"Garlic",unit:"piece",unitCost:10},{id:"m_soy",name:"Soy sauce",unit:"liter",unitCost:60}]}
+  ]};
+  const TL={ categories:[
+    {id:"c_food",name:"Food ingredients",items:[{id:"m_mong",name:"Monggo beans",unit:"kg",unitCost:120},{id:"m_pork",name:"Pork",unit:"kg",unitCost:300},{id:"m_veg",name:"Veg & aromatics",unit:"set",unitCost:70},{id:"m_pasta",name:"Pasta",unit:"kg",unitCost:90},{id:"m_cream",name:"Cream & cheese",unit:"set",unitCost:180},{id:"m_bacon",name:"Bacon",unit:"kg",unitCost:350}]}
+  ]};
+  const line=(ref,qty)=>({id:uid(),ref,qty});
   return { company:"Barluado's Kitchen", currency:"PHP", tagline:"Home-cooked lunch, made to order", orderLink:{label:"Order on Messenger",url:"https://m.me/syntax.premiero"},
     library:L, activeTypeId:"t1", types:[
     { id:"t1", name:"Lunch menu", library:TL, activeId:"p1",
       products:[
         { id:"p1", name:"Monggo", sku:"MNG-01", servings:5, markup:40, available:true,
-          materials:[line("m_mong",0.5),line("m_pork",0.3),line("m_veg",1),line("m_rice",1.5)],
-          packaging:[line("pk_cont",1),line("pk_utseil",1)],
+          materials:[line("m_mong",0.5),line("m_pork",0.3),line("m_veg",1),line("m_rice",1.5),line("m_garlic",3),line("m_soy",0.1)],
+          packaging:[line("pk_cont",1),line("pk_uten",1)],
           overhead:[line("o_elec",2),line("o_lpg",0.5),line("o_trans",1)] },
         { id:"p2", name:"Pasta Carbonara", sku:"CAR-01", servings:5, markup:40, available:true,
-          materials:[line("m_pasta",0.5),line("m_cream",1),line("m_bacon",0.2)],
-          packaging:[line("pk_cont",1),line("pk_utseil",1)],
+          materials:[line("m_pasta",0.5),line("m_cream",1),line("m_bacon",0.2),line("m_garlic",2)],
+          packaging:[line("pk_cont",1),line("pk_uten",1)],
           overhead:[line("o_elec",2),line("o_lpg",0.4),line("o_trans",1)] },
         { id:"p3", name:"Extra plain rice", sku:"RICE-01", servings:5, markup:40, available:false,
           materials:[line("m_rice",0.4)],
@@ -465,24 +483,41 @@ function sampleState(){
       ]}
   ]};
 }
-function normLib(l){ l=l||emptyLib(); ["materials","overhead","packaging"].forEach(k=>{ l[k]=Array.isArray(l[k])?l[k]:[]; l[k].forEach(i=>{ i.id=i.id||uid(); if(i.unit==null) i.unit=(k==="packaging"?"each":""); if(i.unitCost==null) i.unitCost=0; }); }); return l; }
-function normLine(i,kind){ i.id=i.id||uid();
-  if(i.ref==null){ // migrate old plain rows into custom lines
-    i.ref="";
-    if(kind==="overhead" && i.amount!=null){ i.qty=1; i.unitCost=numv(i.amount); i.unit=i.unit||""; }
+function normLib(l){
+  l=l||{categories:[]};
+  if(!Array.isArray(l.categories)){
+    // migrate old {materials,overhead,packaging} shape into categories, preserving item ids
+    const cats=[]; const names={materials:"Raw materials",overhead:"Overhead",packaging:"Packaging"};
+    ["materials","overhead","packaging"].forEach(k=>{ if(Array.isArray(l[k])&&l[k].length) cats.push({id:uid(),name:names[k],items:l[k]}); });
+    l={categories:cats.length?cats:[{id:uid(),name:"Raw materials",items:[]}]};
   }
-  if(i.qty==null) i.qty=(kind==="packaging"?1:0);
-  if(i.name==null) i.name=""; if(i.unit==null) i.unit=(kind==="packaging"?"each":""); if(i.unitCost==null) i.unitCost=0;
-  return i; }
+  l.categories.forEach(c=>{ c.id=c.id||uid(); c.name=c.name||"Category"; c.items=Array.isArray(c.items)?c.items:[];
+    c.items.forEach(i=>{ i.id=i.id||uid(); if(i.unit==null) i.unit=""; if(i.unitCost==null) i.unitCost=0; }); });
+  return l;
+}
+function normLine(i){ i.id=i.id||uid(); if(i.ref==null) i.ref=""; if(i.qty==null) i.qty=0; return {id:i.id,ref:i.ref,qty:i.qty, _name:i.name,_unit:i.unit,_unitCost:i.unitCost,_amount:i.amount}; }
 function normProduct(p){ p.id=p.id||uid();
-  p.materials=(p.materials||p.ingredients||[]).map(i=>normLine(i,"materials"));
-  p.packaging=(p.packaging||[]).map(i=>normLine(i,"packaging"));
-  p.overhead=(p.overhead||[]).map(i=>normLine(i,"overhead"));
+  p.materials=(p.materials||p.ingredients||[]).map(normLine);
+  p.packaging=(p.packaging||[]).map(normLine);
+  p.overhead=(p.overhead||[]).map(normLine);
   if(p.servings==null) p.servings=(p.expectedUnits!=null?p.expectedUnits:(p.yield!=null?p.yield:(p.quantity!=null?p.quantity:5)));
   if(p.available==null) p.available=true;
   if(p.price==null) p.price=0; if(p.markup==null) p.markup=60; p.web=p.web||{show:true,desc:"",img:""}; return p; }
+function migrateCustomLines(t){
+  // any old custom line (no ref but had a name/cost) becomes a library item in an "Imported" category
+  let imp=null;
+  const ensure=()=>{ if(imp) return imp; imp=t.library.categories.find(c=>c.name==="Imported"); if(!imp){ imp={id:uid(),name:"Imported",items:[]}; t.library.categories.push(imp);} return imp; };
+  const findOrAdd=(name,unit,cost)=>{ const c=ensure(); let it=c.items.find(x=>x.name===name&&numv(x.unitCost)===numv(cost)); if(!it){ it={id:uid(),name:name||"Item",unit:unit||"",unitCost:numv(cost)}; c.items.push(it);} return it.id; };
+  t.products.forEach(p=> ["materials","packaging","overhead"].forEach(sec=> p[sec].forEach(l=>{
+    if(!l.ref){ const nm=l._name, ct=(l._amount!=null?l._amount:l._unitCost);
+      if((nm&&String(nm).length)||numv(ct)>0){ if(l._amount!=null && (l.qty==null||l.qty===0)) l.qty=1; l.ref=findOrAdd(nm, l._unit, ct); }
+    }
+    delete l._name; delete l._unit; delete l._unitCost; delete l._amount;
+  })));
+}
 function normType(t){ t.id=t.id||uid(); t.name=t.name||"Type"; t.library=normLib(t.library);
   t.products=Array.isArray(t.products)&&t.products.length?t.products:[emptyProduct("Product A")]; t.products.forEach(normProduct);
+  migrateCustomLines(t);
   if(!t.products.find(p=>p.id===t.activeId)) t.activeId=t.products[0].id; return t; }
 function normalise(s){
   s.company=s.company||""; s.currency=s.currency||"PHP"; s.tagline=s.tagline||""; s.orderLink=s.orderLink||{label:"",url:""};
@@ -524,21 +559,23 @@ function showSaved(){ const el=byId("saveStatus"); if(!el) return; el.textConten
 let toastTimer=null;
 function toast(m){ const el=byId("toast"); if(!el) return; el.textContent=m; el.style.opacity="1"; el.style.transform="translateX(-50%) translateY(0)"; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.style.opacity="0"; el.style.transform="translateX(-50%) translateY(20px)"; },3400); }
 
-/* ---------- library resolution ---------- */
-function libList(kind,t){ return (t&&t.library&&t.library[kind]||[]).concat(state.library[kind]||[]); }
-function resolveItem(kind,ref,t){ if(!ref) return null; return libList(kind,t).find(x=>x.id===ref)||null; }
-function lineInfo(line,kind,t){ if(line.ref){ const it=resolveItem(kind,line.ref,t); return it?{name:it.name,unit:it.unit,unitCost:numv(it.unitCost),missing:false}:{name:"(removed item)",unit:"",unitCost:0,missing:true}; } return {name:line.name,unit:line.unit,unitCost:numv(line.unitCost),missing:false}; }
-function lineCost(line,kind,t){ const inf=lineInfo(line,kind,t); return numv(line.qty)*numv(inf.unitCost); }
+/* ---------- library resolution (category-based, shared + type) ---------- */
+function eachLibItem(t,cb){ const walk=(scope,lib)=> (lib&&lib.categories||[]).forEach(c=> c.items.forEach(it=> cb(it,c,scope)));
+  if(t) walk("type",t.library); walk("shared",state.library); }
+function resolveItem(ref,t){ if(!ref) return null; let f=null; eachLibItem(t,(it)=>{ if(it.id===ref&&!f) f=it; }); return f; }
+function allLibItems(t){ const a=[]; eachLibItem(t,(it,c,scope)=>a.push({it,cat:c.name,scope})); return a; }
+function lineInfo(line,t){ const it=resolveItem(line.ref,t); return it?{name:it.name,unit:it.unit,unitCost:numv(it.unitCost),missing:false}:{name:"(pick an item)",unit:"",unitCost:0,missing:!!line.ref}; }
+function lineCost(line,t){ const inf=lineInfo(line,t); return numv(line.qty)*numv(inf.unitCost); }
 
 /* ---------- calculations ---------- */
 function directOf(p,t){
   t=t||at();
-  const matBatch=p.materials.reduce((s,i)=> s+lineCost(i,"materials",t),0);
+  const matBatch=p.materials.reduce((s,i)=> s+lineCost(i,t),0);
   const servings=Math.max(0,numv(p.servings));
   const matUnit=servings>0?matBatch/servings:0;
-  const packUnit=p.packaging.reduce((s,i)=> s+lineCost(i,"packaging",t),0);
+  const packUnit=p.packaging.reduce((s,i)=> s+lineCost(i,t),0);
   const directUnit=matUnit+packUnit;
-  const ohBatch=p.overhead.reduce((s,i)=> s+lineCost(i,"overhead",t),0);
+  const ohBatch=p.overhead.reduce((s,i)=> s+lineCost(i,t),0);
   const ohUnit=servings>0?ohBatch/servings:0;
   return {matBatch,servings,matUnit,packUnit,directUnit,ohBatch,ohUnit};
 }
@@ -559,63 +596,71 @@ function bizOf(t){
   return {cost,sales,profit,servs,ohTotal};
 }
 
-/* ---------- row builders (library-linked) ---------- */
-function libOptions(kind,t,ref){
-  const tItems=(t&&t.library&&t.library[kind])||[], sItems=state.library[kind]||[];
-  const opt=i=>`<option value="${i.id}" ${i.id===ref?"selected":""}>${esc(i.name)||"(unnamed)"}${i.unit?" · "+esc(i.unit):""} · ${fmt(numv(i.unitCost))}</option>`;
-  let h=`<option value="" ${!ref?"selected":""} disabled>Choose…</option>`;
-  if(tItems.length) h+=`<optgroup label="This type">`+tItems.map(opt).join("")+`</optgroup>`;
-  if(sItems.length) h+=`<optgroup label="Shared">`+sItems.map(opt).join("")+`</optgroup>`;
-  h+=`<option value="__custom__">＋ Custom (one-off)…</option>`;
-  return h;
+/* ---------- product rows (library-linked, no custom) ---------- */
+function lineRow(kind,i,t){
+  const inf=lineInfo(i,t);
+  const nameCell=`<td><button class="pickbtn ${inf.missing?'miss':''}" data-pick="${kind}" data-row="${i.id}">${i.ref?esc(inf.name):"Choose item…"}${inf.missing?' — removed':''}</button></td>`;
+  const qtyCell=`<td class="num qty-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="${kind}" data-field="qty" data-id="${i.id}" value="${i.qty}"></td>`;
+  const unitCell=`<td class="unit-cell auto">${esc(inf.unit)||"—"}</td>`;
+  const costCell=`<td class="num cost-cell auto">${fmt(inf.unitCost)}</td>`;
+  const lineCell=`<td class="num line" data-line="${kind}" data-id="${i.id}">—</td>`;
+  const rm=`<td class="rm"><button class="rm-btn" data-remove="${kind}" data-id="${i.id}" aria-label="Remove">×</button></td>`;
+  return `<tr data-id="${i.id}">${nameCell}${qtyCell}${unitCell}${costCell}${lineCell}${rm}</tr>`;
 }
-function lineRow(kind,i,t,cols){
-  const isCustom=!i.ref;
-  const inf=lineInfo(i,kind,t);
-  const nameCell = isCustom
-    ? `<td><input class="cell-input" data-sec="${kind}" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="Custom name"><button class="linkbtn" data-tolib="${kind}" data-id="${i.id}">use library</button></td>`
-    : `<td><select class="cell-input sel" data-sec="${kind}" data-field="ref" data-id="${i.id}">${libOptions(kind,t,i.ref)}</select>${inf.missing?'<span class="miss">removed</span>':''}</td>`;
-  const qtyCell = `<td class="num qty-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="${kind}" data-field="qty" data-id="${i.id}" value="${i.qty}"></td>`;
-  const unitCell = isCustom
-    ? `<td class="unit-cell"><input class="cell-input" data-sec="${kind}" data-field="unit" data-id="${i.id}" value="${esc(i.unit)}" placeholder="unit"></td>`
-    : `<td class="unit-cell auto">${esc(inf.unit)||"—"}</td>`;
-  const costCell = isCustom
-    ? `<td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-sec="${kind}" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>`
-    : `<td class="num cost-cell auto">${fmt(inf.unitCost)}</td>`;
-  const lineCell = `<td class="num line" data-line="${kind}" data-id="${i.id}">—</td>`;
-  const rm = `<td class="rm"><button class="rm-btn" data-remove="${kind}" data-id="${i.id}" aria-label="Remove">×</button></td>`;
-  return `<tr data-id="${i.id}">${nameCell}${qtyCell}${cols==="noUnit"?"":unitCell}${costCell}${lineCell}${rm}</tr>`;
-}
-const matRow = (i,t)=> lineRow("materials",i,t||at(),"unit");
-const packRow = (i,t)=> lineRow("packaging",i,t||at(),"unit");
-const ovRow = (i,t)=> lineRow("overhead",i,t||at(),"unit");
+const matRow=(i,t)=>lineRow("materials",i,t||at());
+const packRow=(i,t)=>lineRow("packaging",i,t||at());
+const ovRow=(i,t)=>lineRow("overhead",i,t||at());
 
-/* ---------- library editor rows ---------- */
-function libRow(scope,kind,i){
+/* ---------- library editor (categories of items) ---------- */
+function libItemRow(scope,catId,i){
   return `<tr data-id="${i.id}">
-    <td><input class="cell-input" data-libscope="${scope}" data-libkind="${kind}" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="e.g. ${kind==="overhead"?"Electricity":kind==="packaging"?"Container":"Rice"}"></td>
-    <td class="unit-cell"><input class="cell-input" data-libscope="${scope}" data-libkind="${kind}" data-field="unit" data-id="${i.id}" value="${esc(i.unit)}" placeholder="${kind==="overhead"?"kWh":"unit"}"></td>
-    <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-libscope="${scope}" data-libkind="${kind}" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>
-    <td class="rm"><button class="rm-btn" data-libremove="${scope}" data-libkind="${kind}" data-id="${i.id}" aria-label="Remove">×</button></td></tr>`;
+    <td><input class="cell-input" data-libscope="${scope}" data-cat="${catId}" data-field="name" data-id="${i.id}" value="${esc(i.name)}" placeholder="e.g. Garlic"></td>
+    <td class="unit-cell"><input class="cell-input" data-libscope="${scope}" data-cat="${catId}" data-field="unit" data-id="${i.id}" value="${esc(i.unit)}" placeholder="unit (piece, kg, kWh…)"></td>
+    <td class="num cost-cell"><input class="cell-input" type="number" min="0" step="any" data-libscope="${scope}" data-cat="${catId}" data-field="unitCost" data-id="${i.id}" value="${i.unitCost}"></td>
+    <td class="rm"><button class="rm-btn" data-libitemremove="${scope}" data-cat="${catId}" data-id="${i.id}" aria-label="Remove">×</button></td></tr>`;
 }
-function libTable(scope,kind,items){
-  const rows=items.length?items.map(i=>libRow(scope,kind,i)).join(""):`<tr><td colspan="4" class="empty">None yet.</td></tr>`;
-  return `<table class="ledger"><thead><tr><th>Name</th><th>Unit</th><th class="num">Cost / unit</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="add-row"><button class="add-btn" data-libadd="${scope}" data-libkind="${kind}">+ Add</button></div>`;
+function libCatBlock(scope,c){
+  const rows=c.items.length?c.items.map(i=>libItemRow(scope,c.id,i)).join(""):`<tr><td colspan="4" class="empty">No items yet.</td></tr>`;
+  return `<div class="libcat">
+    <div class="libcat-head">
+      <input class="cat-name" data-libscope="${scope}" data-catname="${c.id}" value="${esc(c.name)}" placeholder="Category name (e.g. Food)">
+      <button class="rm-btn" data-catremove="${scope}" data-id="${c.id}" title="Delete category" aria-label="Delete category">×</button>
+    </div>
+    <table class="ledger"><thead><tr><th>Item</th><th>Unit</th><th class="num">Cost / unit</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="add-row"><button class="add-btn" data-libitemadd="${scope}" data-cat="${c.id}">+ Add item</button></div>
+  </div>`;
+}
+function libScope(title,scope,lib){
+  const cats=lib.categories.map(c=>libCatBlock(scope,c)).join("");
+  return `<div class="section-sub first" style="margin-top:24px">${title}</div>${cats||'<p class="empty">No categories yet.</p>'}
+    <div class="add-row" style="max-width:320px"><button class="add-btn" data-catadd="${scope}">+ Add category</button></div>`;
 }
 function renderLibrary(){
   const t=at();
-  const sec=(title,scope,lib)=>`<div class="section-sub first" style="margin-top:22px">${title}</div>
-    <div class="lib-grid">
-      <div><div class="lib-h">Raw materials</div>${libTable(scope,"materials",lib.materials)}</div>
-      <div><div class="lib-h">Overhead rates</div>${libTable(scope,"overhead",lib.overhead)}</div>
-      <div><div class="lib-h">Packaging</div>${libTable(scope,"packaging",lib.packaging)}</div>
-    </div>`;
   byId("libBody").innerHTML =
-    sec("Shared — all business types","shared",state.library) +
-    sec(esc(t.name)+" — this type only","type",t.library);
+    libScope("Shared — all business types","shared",state.library) +
+    libScope(esc(t.name)+" — this type only","type",t.library);
 }
 
+/* ---------- item picker modal ---------- */
+let pickCtx=null;
+function openPicker(kind,rowId){ pickCtx={kind,rowId}; byId("pickSearch").value=""; renderPickList(""); byId("pickModal").style.display="flex"; setTimeout(()=>byId("pickSearch").focus(),30); }
+function closePicker(){ byId("pickModal").style.display="none"; pickCtx=null; }
+function renderPickList(q){
+  const t=at(); q=(q||"").toLowerCase().trim();
+  const items=allLibItems(t).filter(x=> !q || (x.it.name||"").toLowerCase().includes(q) || (x.cat||"").toLowerCase().includes(q));
+  if(!items.length){ byId("pickList").innerHTML=`<div class="empty" style="padding:24px">No items match. Add items in the Library tab.</div>`; return; }
+  byId("pickList").innerHTML=items.map(x=>`<button class="pick-item" data-pickid="${x.it.id}">
+    <span class="pi-name">${esc(x.it.name)||"(unnamed)"}</span>
+    <span class="pi-meta">${esc(x.cat)} · ${x.scope==="shared"?"Shared":"This type"}</span>
+    <span class="pi-cost">${fmt(numv(x.it.unitCost))}${x.it.unit?" / "+esc(x.it.unit):""}</span></button>`).join("");
+}
+function pickChoose(itemId){
+  if(!pickCtx) return; const p=active();
+  if(pickCtx.rowId){ const row=p[pickCtx.kind].find(r=>r.id===pickCtx.rowId); if(row) row.ref=itemId; }
+  else { p[pickCtx.kind].push({id:uid(),ref:itemId,qty:(pickCtx.kind==="packaging"?1:1)}); }
+  closePicker(); renderProductRows(); renderProductBar(); recompute();
+}
 
 /* ---------- bars ---------- */
 function renderTypeBar(){
@@ -664,9 +709,9 @@ function renderProductRows(){ const t=at(), p=active();
 /* ---------- recompute ---------- */
 function recompute(){
   const t=at(), b=bizOf(t), p=active(), f=full(p,t);
-  p.materials.forEach(i=>{ const cell=document.querySelector(`[data-line="materials"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,"materials",t)); });
-  p.packaging.forEach(i=>{ const cell=document.querySelector(`[data-line="packaging"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,"packaging",t)); });
-  p.overhead.forEach(i=>{ const cell=document.querySelector(`[data-line="overhead"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,"overhead",t)); });
+  p.materials.forEach(i=>{ const cell=document.querySelector(`[data-line="materials"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,t)); });
+  p.packaging.forEach(i=>{ const cell=document.querySelector(`[data-line="packaging"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,t)); });
+  p.overhead.forEach(i=>{ const cell=document.querySelector(`[data-line="overhead"][data-id="${i.id}"]`); if(cell) cell.textContent=fmt(lineCost(i,t)); });
 
   setText("matBatch",fmt(f.matBatch)); setText("matUnit",fmt(f.matUnit)); setText("packUnit",fmt(f.packUnit));
   setText("ovBatch",fmt(f.ohBatch)); setText("ovUnit",fmt(f.ohUnit));
@@ -748,6 +793,7 @@ function onInput(e){
   if(id==="ghRepo"){ ghCfg.repo=el.value; saveGh(); return; }
   if(id==="ghBranch"){ ghCfg.branch=el.value; saveGh(); return; }
   if(id==="ghToken"){ ghCfg.token=el.value; saveGh(); return; }
+  if(id==="pickSearch"){ renderPickList(el.value); return; }
   if(id==="typeName"){ t.name=el.value; const c=document.querySelector(`.type-chip[data-switchtype="${t.id}"] span:first-child`); if(c) c.textContent=el.value||"Untitled"; byId("suHead").textContent=(el.value||"Type")+" summary"; persist(); return; }
   if(id==="pCur"){ state.currency=el.value; render(); return; }
   if(id==="pName"){ p.name=el.value; recompute(); return; }
@@ -755,51 +801,41 @@ function onInput(e){
   if(id==="pServings"){ p.servings=el.value; renderProductBar(); recompute(); return; }
   if(id==="pMarkup"){ p.markup=el.value; renderProductBar(); recompute(); return; }
   if(id==="webUnavail"){ p.available=!el.checked; renderProductBar(); recompute(); return; }
-  // library editor fields
-  const lscope=el.dataset.libscope, lkind=el.dataset.libkind, lfield=el.dataset.field, lrid=el.dataset.id;
-  if(lscope&&lkind&&lfield&&lrid){ const lib=(lscope==="shared"?state.library:t.library)[lkind]; const it=lib.find(x=>x.id===lrid);
+  // library editor: category rename
+  const catname=el.dataset.catname, cnscope=el.dataset.libscope;
+  if(catname && cnscope){ const lib=(cnscope==="shared"?state.library:t.library); const c=lib.categories.find(x=>x.id===catname); if(c){ c.name=el.value; renderProductBar(); recompute(); } return; }
+  // library editor: item fields
+  const lscope=el.dataset.libscope, lcat=el.dataset.cat, lfield=el.dataset.field, lrid=el.dataset.id;
+  if(lscope&&lcat&&lfield&&lrid){ const lib=(lscope==="shared"?state.library:t.library); const c=lib.categories.find(x=>x.id===lcat); const it=c&&c.items.find(x=>x.id===lrid);
     if(it){ it[lfield]=el.value; renderProductRows(); renderProductBar(); recompute(); } return; }
-  // product line fields
+  // product line qty
   const sec=el.dataset.sec, field=el.dataset.field, rid=el.dataset.id;
-  if(sec&&field&&rid){ const arr=p[sec]; const row=arr.find(r=>r.id===rid);
-    if(row){
-      if(field==="ref"){
-        if(el.value==="__custom__"){ row.custom=true; row.ref=""; }
-        else { row.ref=el.value; row.custom=false; }
-        renderProductRows(); renderProductBar(); recompute(); return;
-      }
-      row[field]=el.value; renderProductBar(); recompute();
-    } }
+  if(sec&&field&&rid){ const row=p[sec].find(r=>r.id===rid); if(row){ row[field]=el.value; renderProductBar(); recompute(); } }
 }
 function onClick(e){
   if(e.target.id==="pubModal"){ byId("pubModal").style.display="none"; return; }
-  const tolib=e.target.closest("[data-tolib]"); if(tolib){ const p=active(); const arr=p[tolib.dataset.tolib]; const row=arr.find(r=>r.id===tolib.dataset.id); if(row){ row.custom=false; row.ref=""; renderProductRows(); recompute(); } return; }
+  if(e.target.id==="pickModal"){ closePicker(); return; }
+  const pk=e.target.closest("[data-pick]"); if(pk){ openPicker(pk.dataset.pick, pk.dataset.row); return; }
+  const pi=e.target.closest("[data-pickid]"); if(pi){ pickChoose(pi.dataset.pickid); return; }
   const st=e.target.closest(".type-chip"); if(st){ switchType(st.dataset.switchtype); return; }
   const sw=e.target.closest(".prod-chip"); if(sw){ switchProduct(sw.dataset.switch); if(currentTab==="summary"||currentTab==="library") switchTab("materials"); return; }
   const openRow=e.target.closest("tr[data-open]"); if(openRow){ switchProduct(openRow.dataset.open); switchTab("materials"); return; }
   const btn=e.target.closest("button"); if(!btn) return;
+  if(btn.id==="pickClose"){ closePicker(); return; }
   if(btn.dataset.tab){ switchTab(btn.dataset.tab); return; }
-  // library add / remove
-  if(btn.dataset.libadd){ const scope=btn.dataset.libadd, kind=btn.dataset.libkind, lib=(scope==="shared"?state.library:at().library);
-    lib[kind].push({id:uid(),name:"",unit:(kind==="packaging"?"each":""),unitCost:0}); renderLibrary(); renderProductRows(); renderProductBar(); recompute();
-    return; }
-  if(btn.dataset.libremove){ const scope=btn.dataset.libremove, kind=btn.dataset.libkind, lib=(scope==="shared"?state.library:at().library);
-    lib[kind]=lib[kind].filter(x=>x.id!==btn.dataset.id); renderLibrary(); renderProductRows(); renderProductBar(); recompute(); return; }
-  // product line add / remove
-  if(btn.dataset.add){ const sec=btn.dataset.add, p=active();
-    if(sec==="materials"){ p.materials.push({id:uid(),ref:"",custom:false,qty:0,name:"",unit:"",unitCost:0}); }
-    if(sec==="packaging"){ p.packaging.push({id:uid(),ref:"",custom:false,qty:1,name:"",unit:"each",unitCost:0}); }
-    if(sec==="overhead"){ p.overhead.push({id:uid(),ref:"",custom:false,qty:1,name:"",unit:"",unitCost:0}); }
-    renderProductRows(); recompute();
-    const body=sec==="materials"?"matBody":sec==="packaging"?"packBody":"ovBody";
-    const last=byId(body).querySelector("tr:last-child select,tr:last-child input"); if(last) last.focus(); return; }
-  if(btn.dataset.remove){ const sec=btn.dataset.remove, rid=btn.dataset.id, p=active();
-    p[sec]=p[sec].filter(r=>r.id!==rid);
-    renderProductRows(); recompute(); return; }
+  // library category add/remove
+  if(btn.dataset.catadd){ const lib=(btn.dataset.catadd==="shared"?state.library:at().library); lib.categories.push({id:uid(),name:"",items:[]}); renderLibrary(); return; }
+  if(btn.dataset.catremove){ const lib=(btn.dataset.catremove==="shared"?state.library:at().library); if(confirm("Delete this category and its items?")){ lib.categories=lib.categories.filter(c=>c.id!==btn.dataset.id); renderLibrary(); renderProductRows(); renderProductBar(); recompute(); } return; }
+  // library item add/remove
+  if(btn.dataset.libitemadd){ const lib=(btn.dataset.libitemadd==="shared"?state.library:at().library); const c=lib.categories.find(x=>x.id===btn.dataset.cat); if(c){ c.items.push({id:uid(),name:"",unit:"",unitCost:0}); renderLibrary(); const last=byId("libBody").querySelector('input[data-cat="'+c.id+'"]'); } return; }
+  if(btn.dataset.libitemremove){ const lib=(btn.dataset.libitemremove==="shared"?state.library:at().library); const c=lib.categories.find(x=>x.id===btn.dataset.cat); if(c){ c.items=c.items.filter(x=>x.id!==btn.dataset.id); renderLibrary(); renderProductRows(); renderProductBar(); recompute(); } return; }
+  // product line add (opens picker) / remove
+  if(btn.dataset.add){ openPicker(btn.dataset.add, null); return; }
+  if(btn.dataset.remove){ const sec=btn.dataset.remove, rid=btn.dataset.id, p=active(); p[sec]=p[sec].filter(r=>r.id!==rid); renderProductRows(); recompute(); return; }
   if(btn.dataset.action){ handleAction(btn.dataset.action); return; }
 }
-function reassignIds(p){ p.id=uid(); p.materials.forEach(i=>i.id=uid()); p.packaging.forEach(i=>i.id=uid()); p.overhead.forEach(i=>i.id=uid()); return p; }
-function reassignType(t){ t.id=uid(); t.library=normLib(t.library); ["materials","overhead","packaging"].forEach(k=> t.library[k].forEach(i=>i.id=uid())); t.products.forEach(reassignIds); t.activeId=t.products[0]?t.products[0].id:""; return t; }
+function reassignIds(p){ p.id=uid(); ["materials","packaging","overhead"].forEach(k=> p[k].forEach(i=>i.id=uid())); return p; }
+function reassignType(t){ t.id=uid(); t.library=normLib(t.library); t.library.categories.forEach(c=>{ c.id=uid(); c.items.forEach(i=>i.id=uid()); }); t.products.forEach(reassignIds); t.activeId=t.products[0]?t.products[0].id:""; return t; }
 function handleAction(a){
   const t=at();
   if(a==="newType"){ const nt=emptyType("Type "+(state.types.length+1)); state.types.push(nt); switchType(nt.id); switchTab("library"); byId("typeName").focus(); byId("typeName").select(); }
@@ -881,11 +917,11 @@ function downloadCSV(){
     t.products.forEach(p=>{ const f=full(p,t);
       row("Product: "+(p.name||"Untitled")); row("Servings this session",p.servings); row("Available",p.available!==false?"yes":"no");
       row("Raw materials (for this cook)"); row("Material","Qty","Unit","Unit cost","Line");
-      p.materials.forEach(i=>{ const inf=lineInfo(i,"materials",t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
+      p.materials.forEach(i=>{ const inf=lineInfo(i,t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
       row("Packaging (per serving)"); row("Item","Qty","Unit","Cost each","Line");
-      p.packaging.forEach(i=>{ const inf=lineInfo(i,"packaging",t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
+      p.packaging.forEach(i=>{ const inf=lineInfo(i,t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
       row("Overhead (per batch)"); row("Item","Qty","Unit","Rate","Line");
-      p.overhead.forEach(i=>{ const inf=lineInfo(i,"overhead",t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
+      p.overhead.forEach(i=>{ const inf=lineInfo(i,t); row(inf.name,i.qty,inf.unit,inf.unitCost,(numv(i.qty)*numv(inf.unitCost)).toFixed(2)); });
       row("Overhead / batch","","","",f.ohBatch.toFixed(2)); row("Total cost/serving","","","",f.total.toFixed(2)); row("Selling price","","","",f.price); row("");
     });
   });
@@ -901,9 +937,9 @@ function importJSON(file){ const r=new FileReader();
 /* ---------- print (active product) ---------- */
 function buildPrint(){
   const t=at(), b=bizOf(t), p=active(), f=full(p,t), money=fmt;
-  const mat=p.materials.map(i=>{ const inf=lineInfo(i,"materials",t); return `<tr><td>${esc(inf.name)||"—"}</td><td class="pnum">${i.qty}</td><td>${esc(inf.unit)}</td><td class="pnum">${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
-  const pack=p.packaging.map(i=>{ const inf=lineInfo(i,"packaging",t); return `<tr><td>${esc(inf.name)||"—"}</td><td class="pnum">${i.qty}</td><td class="pnum">${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
-  const ov=p.overhead.map(i=>{ const inf=lineInfo(i,"overhead",t); return `<tr><td>${esc(inf.name)||"—"}${inf.unit?" ("+esc(inf.unit)+")":""}</td><td class="pnum">${i.qty} × ${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
+  const mat=p.materials.map(i=>{ const inf=lineInfo(i,t); return `<tr><td>${esc(inf.name)||"—"}</td><td class="pnum">${i.qty}</td><td>${esc(inf.unit)}</td><td class="pnum">${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
+  const pack=p.packaging.map(i=>{ const inf=lineInfo(i,t); return `<tr><td>${esc(inf.name)||"—"}</td><td class="pnum">${i.qty}</td><td class="pnum">${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
+  const ov=p.overhead.map(i=>{ const inf=lineInfo(i,t); return `<tr><td>${esc(inf.name)||"—"}${inf.unit?" ("+esc(inf.unit)+")":""}</td><td class="pnum">${i.qty} × ${money(numv(inf.unitCost))}</td><td class="pnum">${money(numv(i.qty)*numv(inf.unitCost))}</td></tr>`; }).join("");
   byId("printArea").innerHTML=`
     ${state.company?`<div class="pcompany">${esc(state.company)} · ${esc(t.name)}</div>`:`<div class="pcompany">${esc(t.name)}</div>`}
     <h1>${esc(p.name)||"Product cost sheet"}${p.available?"":" (currently unavailable)"}</h1>
