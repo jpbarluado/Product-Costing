@@ -1,33 +1,26 @@
 {
-  "business": "Corpo Lunch",
-  "tagline": "Mini-online business",
+  "business": "Barluado's Kitchen",
+  "tagline": "Home-cooked lunch, made to order",
   "currency": "PHP",
   "order": {
     "label": "Order on Messenger",
     "url": "https://m.me/syntax.premiero"
   },
-  "generatedAt": "2026-09-09T20:53:03.048Z",
+  "generatedAt": "2026-09-10T21:24:14.642Z",
   "types": [
     {
-      "name": "Foods",
+      "name": "Lunch menu",
       "products": [
         {
-          "name": "Special Carbonara",
-          "price": 189,
+          "name": "Pasta Carbonara",
+          "price": 1283,
           "description": "",
           "image": "",
-          "available": false
-        },
-        {
-          "name": "Savory Monggo",
-          "price": 149,
-          "description": "",
-          "image": "",
-          "available": false
+          "available": true
         },
         {
           "name": "Extra plain rice",
-          "price": 17,
+          "price": 15,
           "description": "",
           "image": "",
           "available": false
