@@ -6,11 +6,18 @@
     "label": "Order on Messenger",
     "url": "https://m.me/syntax.premiero"
   },
-  "generatedAt": "2026-09-23T18:00:10.023Z",
+  "generatedAt": "2026-09-23T18:01:29.067Z",
   "types": [
     {
       "name": "Lunch menu",
       "products": [
+        {
+          "name": "Monggo",
+          "price": 160,
+          "description": "",
+          "image": "",
+          "available": true
+        },
         {
           "name": "Pasta Carbonara",
           "price": 200,
