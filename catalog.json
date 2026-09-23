@@ -6,7 +6,7 @@
     "label": "Order on Messenger",
     "url": "https://m.me/syntax.premiero"
   },
-  "generatedAt": "2026-09-23T18:11:14.072Z",
+  "generatedAt": "2026-09-23T18:12:18.314Z",
   "types": [
     {
       "name": "Lunch menu",
@@ -30,7 +30,7 @@
           "price": 17,
           "description": "",
           "image": "",
-          "available": false
+          "available": true
         }
       ]
     }
