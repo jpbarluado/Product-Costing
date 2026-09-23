@@ -6,21 +6,21 @@
     "label": "Order on Messenger",
     "url": "https://m.me/syntax.premiero"
   },
-  "generatedAt": "2026-09-10T21:24:14.642Z",
+  "generatedAt": "2026-09-23T18:00:10.023Z",
   "types": [
     {
       "name": "Lunch menu",
       "products": [
         {
           "name": "Pasta Carbonara",
-          "price": 1283,
+          "price": 200,
           "description": "",
           "image": "",
           "available": true
         },
         {
           "name": "Extra plain rice",
-          "price": 15,
+          "price": 17,
           "description": "",
           "image": "",
           "available": false
